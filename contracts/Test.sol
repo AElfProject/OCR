@@ -133,6 +133,22 @@ contract Test {
         validBytesCount = uint8(uint256(rawReportContext));
     }
 
+    function decodeReport3(bytes calldata _report)
+        public
+        view
+        returns (
+            uint8 dataCount, bytes32[] memory data
+        ) {
+      
+      bytes32 a;
+      bytes32 b;
+      (a, b, data) = abi.decode(
+            _report,
+            (bytes32, bytes32, bytes32[])
+        );
+      dataCount = uint8(uint256(a));
+    }
+
     address public publicKey;
     bytes32 public reportHash;
 
