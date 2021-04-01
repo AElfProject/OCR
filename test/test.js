@@ -15,24 +15,16 @@ contract('MyTest', (accounts) => {
     "0x0000000000000000000000000000000000000000000000000000000000000001"];
     await testInstance.generate(context, observers, dataList);
     let report = await testInstance.report();
-
     let myCode = "0x0000000000000000000000070707070707070707070707070707070000001010000102030400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000f50000000000000000000000000000000000000000000000000000000000c99dc3000000000000000000000000000000000000000000000000000070100b76d3850000000000000000000000000000000000000000000000000000000000000001";
     assert.equal(myCode, report, "invalid format");
-
     let reportStr = myCode;
     const messageHash = web3.utils.sha3(reportStr);
     const accountOnePrivateKey = "c808329907ec179d844b0b7762265f029a4d20ce73dc2d0f1a4fbfa27b979cf5";
     let signature = web3.eth.accounts.sign(messageHash, accountOnePrivateKey);
-    console.log("signature info: ");
-    console.log(signature);
     await testInstance.verifySign3(report, signature.r, signature.s, signature.v);
     let hash = await testInstance.reportHash();
-    console.log(hash);
     let signer = await testInstance.publicKey();
-
-    //signer = await testInstance.recoverAddress(signature.messageHash, signature.v, signature.r, signature.s);
-    console.log(signer);
-    console.log(accounts[0]);
+    assert.equal(signer, accounts[0], "invalid sign");
   });
 
   it('test sha', async () => {
@@ -49,6 +41,17 @@ contract('MyTest', (accounts) => {
     let sha = await testInstance.calSha256(report);
     let hashFromAelf = "0x90c8905400249e6c663ca108c82090230601e91f0d2577c67d6c428dbe175f39";
     assert.equal(sha, hashFromAelf, "invalid hash op");
+  });
+
+  it('test decode report', async () => {
+    const testInstance = await MyTest.deployed();
+    let encodeData = "0x00000000000007070707070707070707070707070707000000000000000a030700040a00000000000000000000000000000000000000000000000000000000000a05617364617300000000000000000000000000000000000000000000000000";
+    let decodeData = await testInstance.decodeReport2(encodeData);
+    assert.equal(decodeData.roundId, 10, "invalid round id");
+    assert.equal(decodeData.observerCount, 3, "invalid observerCount");
+    assert.equal(decodeData.validBytesCount, 7, "invalid validBytesCount");
+    assert.equal(decodeData.observation, "0x0a05617364617300000000000000000000000000000000000000000000000000", "invalid observation");
+    assert.equal(decodeData.rawObservers, "0x00040a0000000000000000000000000000000000000000000000000000000000", "invalid observation");
   });
 });
 

@@ -28,7 +28,7 @@ contract OffchainAggregator is
         // 64 bits against collisions. This is acceptable, since a malicious owner has
         // easier way of messing up the protocol than to find hash collisions.
         bytes16 latestConfigDigest;
-        uint32 latestRoundId;
+        uint64 latestRoundId;
     }
     HotVars internal s_hotVars;
 
@@ -37,9 +37,10 @@ contract OffchainAggregator is
     struct Transmission {
         bytes32 answer; // 192 bits ought to be enough for anyone
         uint64 timestamp;
+        uint8 validBytes;
     }
     /* aggregator round ID */
-    mapping(uint32 => Transmission) internal s_transmissions;
+    mapping(uint64 => Transmission) internal s_transmissions;
 
     // incremented each time a new config is posted. This count is incorporated
     // into the config digest, to prevent replay attacks.
@@ -280,7 +281,7 @@ contract OffchainAggregator is
     event RoundRequested(
         address indexed requester,
         bytes16 configDigest,
-        uint32 roundId
+        uint64 roundId
     );
 
     /**
@@ -350,7 +351,7 @@ contract OffchainAggregator is
      * @param rawReportContext signature-replay-prevention domain-separation tag
      */
     event NewTransmission(
-        uint32 indexed roundId,
+        uint64 indexed roundId,
         bytes32 answer,
         address transmitter,
         bytes observers,
@@ -396,7 +397,7 @@ contract OffchainAggregator is
         view
         returns (
             bytes16 configDigest,
-            uint32 latestRoundId,
+            uint64 latestRoundId,
             bytes32 latestAnswer,
             uint64 latestTimestamp
         )
@@ -467,32 +468,39 @@ contract OffchainAggregator is
             msg.data.length == expectedMsgDataLength(_report, _rs, _ss),
             "transmit message too long"
         );
-        uint32 roundId;
+        uint64 roundId;
         ReportData memory r; // Relieves stack pressure
         {
             r.hotVars = s_hotVars; // cache read from storage
 
             bytes32 rawObservers;
-            uint256 observerCount;
-            (r.rawReportContext, rawObservers, observerCount, r.observation) = abi.decode(
+            (r.rawReportContext, rawObservers, r.observation) = abi.decode(
                 _report,
-                (bytes32, bytes32, uint256, bytes32)
+                (bytes32, bytes32, bytes32)
             );
 
             // rawReportContext consists of:
-            // 12-byte zero padding
+            // 6-byte zero padding
             // 16-byte configDigest
-            // 4-byte round id
+            // 8-byte round id
+            // 1-byte observer count
+            // 1-byte valid byte count (answer)
 
-            bytes16 configDigest = bytes16(r.rawReportContext << 96);
+            bytes16 configDigest = bytes16(r.rawReportContext << 48);
             require(
                 r.hotVars.latestConfigDigest == configDigest,
                 "configDigest mismatch"
             );
 
-            roundId = uint32(uint256(r.rawReportContext));
+            roundId = uint64(bytes8(r.rawReportContext << 176));
             require(s_transmissions[roundId].timestamp == 0, "data has been transmitted");
-            
+
+            uint8 observerCount = uint8(bytes1(r.rawReportContext << 240));
+            s_transmissions[roundId] = Transmission(
+                r.observation,
+                uint64(block.timestamp),
+                uint8(uint256(r.rawReportContext))
+            );
             require(_rs.length <= maxNumOracles, "too many signatures");
             require(_ss.length == _rs.length, "signatures out of registration");
 
@@ -544,11 +552,6 @@ contract OffchainAggregator is
             if(roundId > r.hotVars.latestRoundId){
                 r.hotVars.latestRoundId = roundId;
             }
-            s_transmissions[roundId] = Transmission(
-                r.observation,
-                uint64(block.timestamp)
-            );
-
             emit NewTransmission(
                 r.hotVars.latestRoundId,
                 r.observation,
