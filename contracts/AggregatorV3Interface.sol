@@ -17,6 +17,7 @@ interface AggregatorV3Interface {
         returns (
             uint80 roundId,
             bytes32 answer,
+            uint8 validBytes,
             uint256 startedAt,
             uint256 updatedAt
         );
@@ -27,6 +28,7 @@ interface AggregatorV3Interface {
         returns (
             uint80 roundId,
             bytes32 answer,
+            uint8 validBytes,
             uint256 startedAt,
             uint256 updatedAt
         );

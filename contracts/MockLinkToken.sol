@@ -16,10 +16,6 @@ contract MockLinkToken is LinkTokenInterface {
     mapping(address => uint256) public _balanceOf;
     mapping(address => mapping(address => uint256)) public _allowance;
 
-    receive() external payable {
-        deposit();
-    }
-
     function decimals() external view override returns (uint8 decimalPlaces) {
         decimalPlaces = _decimals;
     }
@@ -78,9 +74,9 @@ contract MockLinkToken is LinkTokenInterface {
         tokenSymbol = _symbol;
     }
 
-    function deposit() public payable {
-        _balanceOf[msg.sender] += msg.value;
-        emit Deposit(msg.sender, msg.value);
+    function deposit(address user, uint256 amount) external override{
+        _balanceOf[user] += amount;
+        emit Deposit(user, amount);
     }
 
     function withdraw(uint256 wad) public {
@@ -137,8 +133,7 @@ contract MockLinkToken is LinkTokenInterface {
         address dst,
         uint256 wad
     ) private returns (bool) {
-        require(_balanceOf[src] >= wad);
-
+        require(_balanceOf[src] >= wad, "insufficient balance");
         if (src != msg.sender && _allowance[src][msg.sender] != uint256(-1)) {
             require(_allowance[src][msg.sender] >= wad);
             _allowance[src][msg.sender] -= wad;

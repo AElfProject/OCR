@@ -584,8 +584,8 @@ contract OffchainAggregator is
     /**
      * @notice median from the most recent report
      */
-    function latestAnswer() public view virtual override returns (bytes32) {
-        return s_transmissions[s_hotVars.latestRoundId].answer;
+    function latestAnswer() public view virtual override returns (bytes32, uint8) {
+        return (s_transmissions[s_hotVars.latestRoundId].answer, s_transmissions[s_hotVars.latestRoundId].validBytes);
     }
 
     /**
@@ -611,12 +611,12 @@ contract OffchainAggregator is
         view
         virtual
         override
-        returns (bytes32)
+        returns (bytes32, uint8)
     {
         if (_roundId > 0xFFFFFFFF) {
-            return 0;
+            return (0, 0);
         }
-        return s_transmissions[uint32(_roundId)].answer;
+        return (s_transmissions[uint32(_roundId)].answer, s_transmissions[uint32(_roundId)].validBytes);
     }
 
     /**
@@ -672,6 +672,7 @@ contract OffchainAggregator is
      * @param _roundId target aggregator round (NOT OCR round). Must fit in uint32
      * @return roundId _roundId
      * @return answer median of report from given _roundId
+     * @return validBytes answer's length
      * @return startedAt timestamp of block in which report from given _roundId was transmitted
      * @return updatedAt timestamp of block in which report from given _roundId was transmitted
      */
@@ -683,6 +684,7 @@ contract OffchainAggregator is
         returns (
             uint80 roundId,
             bytes32 answer,
+            uint8 validBytes,
             uint256 startedAt,
             uint256 updatedAt
         )
@@ -692,6 +694,7 @@ contract OffchainAggregator is
         return (
             _roundId,
             transmission.answer,
+            transmission.validBytes,
             transmission.timestamp,
             transmission.timestamp
         );
@@ -701,6 +704,7 @@ contract OffchainAggregator is
      * @notice aggregator details for the most recently transmitted report
      * @return roundId aggregator round of latest report (NOT OCR round)
      * @return answer median of latest report
+     * @return validBytes answer's length
      * @return startedAt timestamp of block containing latest report
      * @return updatedAt timestamp of block containing latest report
      */
@@ -712,6 +716,7 @@ contract OffchainAggregator is
         returns (
             uint80 roundId,
             bytes32 answer,
+            uint8 validBytes,
             uint256 startedAt,
             uint256 updatedAt
         )
@@ -725,6 +730,7 @@ contract OffchainAggregator is
         return (
             roundId,
             transmission.answer,
+            transmission.validBytes,
             transmission.timestamp,
             transmission.timestamp
         );
