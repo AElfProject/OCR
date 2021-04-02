@@ -251,4 +251,12 @@ contract Test {
         bytes32 h = keccak256(_report);
         return h;
     }
+
+    function getGweiAmount() public view returns (uint256){
+      return (1 gwei);
+    }
+
+    function getGasPrice() public view returns (uint256) {
+      return tx.gasprice;
+    }
 }

@@ -1,7 +1,7 @@
 const MyTest = artifacts.require("Test");
 
 contract('MyTest', (accounts) => {
-  it('test code', async () => {
+  it('code test', async () => {
     const testInstance = await MyTest.deployed();
     await testInstance.generateBytes32("0x123456789abcd");
     let a = await testInstance.bytes32v();
@@ -19,15 +19,15 @@ contract('MyTest', (accounts) => {
     assert.equal(myCode, report, "invalid format");
     let reportStr = myCode;
     const messageHash = web3.utils.sha3(reportStr);
-    const accountOnePrivateKey = "c808329907ec179d844b0b7762265f029a4d20ce73dc2d0f1a4fbfa27b979cf5";
-    let signature = web3.eth.accounts.sign(messageHash, accountOnePrivateKey);
+    let userOne = web3.eth.accounts.create(web3.utils.randomHex(32));
+    let signature = web3.eth.accounts.sign(messageHash, userOne.privateKey);
     await testInstance.verifySign3(report, signature.r, signature.s, signature.v);
     let hash = await testInstance.reportHash();
     let signer = await testInstance.publicKey();
-    assert.equal(signer, accounts[0], "invalid sign");
+    assert.equal(signer, userOne.address, "invalid sign");
   });
 
-  it('test sha', async () => {
+  it('sha test', async () => {
     const testInstance = await MyTest.deployed();
     let context = "0x0000000000000000000000070707070707070707070707070707070000001010";
     let observers = "0x0001020304000000000000000000000000000000000000000000000000000000";
@@ -43,7 +43,7 @@ contract('MyTest', (accounts) => {
     assert.equal(sha, hashFromAelf, "invalid hash op");
   });
 
-  it('test decode report', async () => {
+  it('decode report', async () => {
     const testInstance = await MyTest.deployed();
     let encodeData = "0x00000000000007070707070707070707070707070707000000000000000a030700040a00000000000000000000000000000000000000000000000000000000000a05617364617300000000000000000000000000000000000000000000000000";
     let decodeData = await testInstance.decodeReport2(encodeData);
@@ -58,7 +58,14 @@ contract('MyTest', (accounts) => {
     assert.equal(decodeData.dataCount, 53, "report 3 decode invalid data count");
     assert.equal(decodeData.data[0], "0x0a33617364617361736461736464e890a8e58da1e698afe59296e595a1e590a7", "report 3 decode invalid data");
     assert.equal(decodeData.data[1], "0xe698afe59296e595a1e590a7e5bab7e5b888e582850000000000000000000000", "report 3 decode invalid data");
-    
+  });
+
+  it('fee test', async () => {
+    const testInstance = await MyTest.deployed();
+    let gweiAmount = await testInstance.getGweiAmount();
+    assert.equal(gweiAmount.toString(), 1000000000);
+    let gasPrice = await testInstance.getGasPrice();
+    console.log(gasPrice.toString());
   });
 });
 
