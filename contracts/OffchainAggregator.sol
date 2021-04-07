@@ -38,6 +38,9 @@ contract OffchainAggregator is
         bytes32 answer; // 192 bits ought to be enough for anyone
         uint64 timestamp;
         uint8 validBytes;
+        bytes32 multipleObservationsIndex;
+        bytes32 multipleObservationsValidBytes;
+        bytes32[] multipleObservations;
     }
     /* aggregator round ID */
     mapping(uint64 => Transmission) internal s_transmissions;
@@ -379,6 +382,7 @@ contract OffchainAggregator is
     struct ReportData {
         HotVars hotVars; // Only read from storage once
         bytes observers; // ith element is the index of the ith observer
+        bytes observersCount;
         bytes32 observation; // ith element is the ith observation
         bytes vs; // jth element is the v component of the jth signature
         bytes32 rawReportContext;
@@ -474,9 +478,13 @@ contract OffchainAggregator is
             r.hotVars = s_hotVars; // cache read from storage
 
             bytes32 rawObservers;
-            (r.rawReportContext, rawObservers, r.observation) = abi.decode(
+            bytes32 observersCount;
+            bytes32 observationIndex;
+            bytes32 observationLength;
+            bytes32[] memory multipleObservation;
+            (r.rawReportContext, rawObservers, observersCount, r.observation, observationIndex, observationLength, multipleObservation) = abi.decode(
                 _report,
-                (bytes32, bytes32, bytes32)
+                (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
             );
 
             // rawReportContext consists of:
@@ -499,7 +507,10 @@ contract OffchainAggregator is
             s_transmissions[roundId] = Transmission(
                 r.observation,
                 uint64(block.timestamp),
-                uint8(uint256(r.rawReportContext))
+                uint8(uint256(r.rawReportContext)),
+                observationIndex,
+                observationLength,
+                multipleObservation
             );
             require(_rs.length <= maxNumOracles, "too many signatures");
             require(_ss.length == _rs.length, "signatures out of registration");
@@ -512,12 +523,14 @@ contract OffchainAggregator is
 
             // Copy observer identities in bytes32 rawObservers to bytes r.observers
             r.observers = new bytes(observerCount);
+            r.observersCount = new bytes(observerCount);
             bool[maxNumOracles] memory seen;
             for (uint8 i = 0; i < observerCount; i++) {
                 uint8 observerIdx = uint8(rawObservers[i]);
                 require(!seen[observerIdx], "observer index repeated");
                 seen[observerIdx] = true;
                 r.observers[i] = rawObservers[i];
+                r.observersCount[i] = observersCount[i];
             }
 
             Oracle memory transmitter = s_oracles[msg.sender];
@@ -574,7 +587,7 @@ contract OffchainAggregator is
         }
         s_hotVars = r.hotVars;
         assert(initialGas < maxUint32);  // ？
-        reimburseAndRewardOracles(uint32(initialGas), r.observers);
+        reimburseAndRewardOracles(uint32(initialGas), r.observers, r.observersCount);
     }
 
     /*
@@ -584,8 +597,12 @@ contract OffchainAggregator is
     /**
      * @notice median from the most recent report
      */
-    function latestAnswer() public view virtual override returns (bytes32, uint8) {
-        return (s_transmissions[s_hotVars.latestRoundId].answer, s_transmissions[s_hotVars.latestRoundId].validBytes);
+    function latestAnswer() public view virtual override returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory) {
+        return (s_transmissions[s_hotVars.latestRoundId].answer, 
+                s_transmissions[s_hotVars.latestRoundId].validBytes,
+                s_transmissions[s_hotVars.latestRoundId].multipleObservationsIndex,
+                s_transmissions[s_hotVars.latestRoundId].multipleObservationsValidBytes,
+                s_transmissions[s_hotVars.latestRoundId].multipleObservations);
     }
 
     /**
@@ -611,12 +628,16 @@ contract OffchainAggregator is
         view
         virtual
         override
-        returns (bytes32, uint8)
+        returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory)
     {
         if (_roundId > 0xFFFFFFFF) {
-            return (0, 0);
+            return (0, 0, 0, 0, new bytes32[](0));
         }
-        return (s_transmissions[uint32(_roundId)].answer, s_transmissions[uint32(_roundId)].validBytes);
+        return (s_transmissions[uint32(_roundId)].answer, 
+                s_transmissions[uint32(_roundId)].validBytes,
+                s_transmissions[uint32(_roundId)].multipleObservationsIndex,
+                s_transmissions[uint32(_roundId)].multipleObservationsValidBytes,
+                s_transmissions[uint32(_roundId)].multipleObservations);
     }
 
     /**
@@ -671,8 +692,11 @@ contract OffchainAggregator is
      * @notice details for the given aggregator round
      * @param _roundId target aggregator round (NOT OCR round). Must fit in uint32
      * @return roundId _roundId
-     * @return answer median of report from given _roundId
+     * @return answer if there is only one observation, it is the aggrated data. Otherwise, it the merkel tree root
      * @return validBytes answer's length
+     * @return multipleObservationsIndex it is the observations's order, if there are multiple observations
+     * @return multipleObservationsValidBytes it is the observations' length, if there are multiple observations
+     * @return multipleObservations concrete answers
      * @return startedAt timestamp of block in which report from given _roundId was transmitted
      * @return updatedAt timestamp of block in which report from given _roundId was transmitted
      */
@@ -685,6 +709,9 @@ contract OffchainAggregator is
             uint80 roundId,
             bytes32 answer,
             uint8 validBytes,
+            bytes32 multipleObservationsIndex,
+            bytes32 multipleObservationsValidBytes,
+            bytes32[] memory multipleObservations,
             uint256 startedAt,
             uint256 updatedAt
         )
@@ -695,6 +722,9 @@ contract OffchainAggregator is
             _roundId,
             transmission.answer,
             transmission.validBytes,
+            transmission.multipleObservationsIndex,
+            transmission.multipleObservationsValidBytes,
+            transmission.multipleObservations,
             transmission.timestamp,
             transmission.timestamp
         );
@@ -705,6 +735,9 @@ contract OffchainAggregator is
      * @return roundId aggregator round of latest report (NOT OCR round)
      * @return answer median of latest report
      * @return validBytes answer's length
+     * @return multipleObservationsIndex it is the observations's order, if there are multiple observations
+     * @return multipleObservationsValidBytes it is the observations' length, if there are multiple observations
+     * @return multipleObservations concrete answers
      * @return startedAt timestamp of block containing latest report
      * @return updatedAt timestamp of block containing latest report
      */
@@ -717,6 +750,9 @@ contract OffchainAggregator is
             uint80 roundId,
             bytes32 answer,
             uint8 validBytes,
+            bytes32 multipleObservationsIndex,
+            bytes32 multipleObservationsValidBytes,
+            bytes32[] memory multipleObservations,
             uint256 startedAt,
             uint256 updatedAt
         )
@@ -731,6 +767,9 @@ contract OffchainAggregator is
             roundId,
             transmission.answer,
             transmission.validBytes,
+            transmission.multipleObservationsIndex,
+            transmission.multipleObservationsValidBytes,
+            transmission.multipleObservations,
             transmission.timestamp,
             transmission.timestamp
         );

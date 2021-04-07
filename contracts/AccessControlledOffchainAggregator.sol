@@ -45,7 +45,7 @@ contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAcc
     override
     view
     checkAccess()
-    returns (bytes32, uint8)
+    returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory)
   {
     return super.latestAnswer();
   }
@@ -78,7 +78,7 @@ contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAcc
     override
     view
     checkAccess()
-    returns (bytes32, uint8)
+    returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory)
   {
     return super.getAnswer(_roundId);
   }
@@ -119,6 +119,9 @@ contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAcc
       uint80,
       bytes32,
       uint8,
+      bytes32,
+      bytes32,
+      bytes32[] memory,
       uint256,
       uint256
     )
@@ -136,6 +139,9 @@ contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAcc
       uint80,
       bytes32,
       uint8,
+      bytes32,
+      bytes32,
+      bytes32[] memory,
       uint256,
       uint256
     )

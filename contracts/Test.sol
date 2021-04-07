@@ -149,6 +149,43 @@ contract Test {
       dataCount = uint8(uint256(a));
     }
 
+    function decodeReport4(bytes calldata _report)
+    public
+    view
+    returns (
+        uint8 _validBytesCount,
+        uint8[] memory _observerIndex, 
+        uint8[] memory _observerCount,
+        bytes32 _aggregateData,
+        uint8[] memory _observerOrder,
+        uint8[] memory _observationsLength,
+        bytes32[] memory _observations
+    ) {
+      
+      bytes32 configDigest;
+      bytes32 observerIndex;
+      bytes32 observerCount;
+      bytes32 aggregateData;
+      bytes32 observerOrder;
+      bytes32 observationsLength;
+      bytes32[] memory observations;
+      (configDigest, observerIndex, observerCount, aggregateData, observerOrder, observationsLength, observations) = abi.decode(
+            _report,
+            (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
+        );
+      _validBytesCount = uint8(uint256(configDigest));
+      _observerIndex = new uint8[](32);
+      _observerCount = new uint8[](32);
+      _aggregateData = aggregateData;
+      _observerOrder = new uint8[](observations.length);
+      _observationsLength = new uint8[](observations.length);
+      for(uint i = 0; i < observations.length; i ++){
+          _observerOrder[i] = uint8(observerOrder[i]);
+          _observationsLength[i] = uint8(observationsLength[i]);
+      }
+      _observations = observations;
+    }
+
     address public publicKey;
     bytes32 public reportHash;
 

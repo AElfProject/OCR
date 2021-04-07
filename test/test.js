@@ -67,5 +67,34 @@ contract('MyTest', (accounts) => {
     let gasPrice = await testInstance.getGasPrice();
     console.log(gasPrice.toString());
   });
+
+  it('decode 4 with multple observations test', async () => {
+    const testInstance = await MyTest.deployed();
+    let encodeData = "0x000000000000f6f3ed664fd0e7be332f035ec351acf1000000000000000a0307000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e00000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e000a056173646173000000000000000000000000000000000000000000000000000001020000000000000000000000000000000000000000000000000000000000060606000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000030a0431203a3400000000000000000000000000000000000000000000000000000a0431203a3500000000000000000000000000000000000000000000000000000a0431203a360000000000000000000000000000000000000000000000000000";
+    let decodeData = await testInstance.decodeReport4(encodeData);
+    assert.equal(decodeData._observerOrder.length, 3, "invalid _observerOrder");
+    assert.equal(decodeData._observerOrder[0], 0, "invalid _observerOrder one");
+    assert.equal(decodeData._observerOrder[1], 1, "invalid _observerOrder two");
+    assert.equal(decodeData._observerOrder[2], 2, "invalid _observerOrder three");
+    assert.equal(decodeData._validBytesCount.toString(), 7, "invalid _validBytesCount");
+    assert.equal(decodeData._aggregateData, "0x0a05617364617300000000000000000000000000000000000000000000000000", "invalid _aggregateData");
+    assert.equal(decodeData._observations.length, 3, "invalid _observations");
+    assert.equal(decodeData._observations[0], "0x0a0431203a340000000000000000000000000000000000000000000000000000", "invalid _observations one");
+    assert.equal(decodeData._observations[1], "0x0a0431203a350000000000000000000000000000000000000000000000000000", "invalid _observations two");
+    assert.equal(decodeData._observations[2], "0x0a0431203a360000000000000000000000000000000000000000000000000000", "invalid _observations three");
+    assert.equal(decodeData._observationsLength.length, 3, "invalid _observerOrder");
+    assert.equal(decodeData._observationsLength[0].toString(), 6, "invalid _observerOrder one");
+  });
+
+  it('decode 4 with single observation test', async () => {
+    const testInstance = await MyTest.deployed();
+    let encodeData = "0x000000000000f6f3ed664fd0e7be332f035ec351acf1000000000000000a0007000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e00000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e000a056173646173000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000";
+    let decodeData = await testInstance.decodeReport4(encodeData);
+    assert.equal(decodeData._observerOrder.length, 0, "invalid _observerOrder");
+    assert.equal(decodeData._validBytesCount.toString(), 7, "invalid _validBytesCount");
+    assert.equal(decodeData._aggregateData, "0x0a05617364617300000000000000000000000000000000000000000000000000", "invalid _aggregateData");
+    assert.equal(decodeData._observations.length, 0, "invalid _observations");
+    assert.equal(decodeData._observationsLength.length, 0, "invalid _observerOrder");
+  });
 });
 

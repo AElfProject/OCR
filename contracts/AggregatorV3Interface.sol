@@ -18,6 +18,9 @@ interface AggregatorV3Interface {
             uint80 roundId,
             bytes32 answer,
             uint8 validBytes,
+            bytes32 multipleObservationsIndex,
+            bytes32 multipleObservationsValidBytes,
+            bytes32[] memory multipleObservations,
             uint256 startedAt,
             uint256 updatedAt
         );
@@ -29,6 +32,9 @@ interface AggregatorV3Interface {
             uint80 roundId,
             bytes32 answer,
             uint8 validBytes,
+            bytes32 multipleObservationsIndex,
+            bytes32 multipleObservationsValidBytes,
+            bytes32[] memory multipleObservations,
             uint256 startedAt,
             uint256 updatedAt
         );

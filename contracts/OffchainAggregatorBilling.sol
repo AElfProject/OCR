@@ -391,6 +391,7 @@ contract OffchainAggregatorBilling is Owned {
 
   function oracleRewards(
     bytes memory observers,
+    bytes memory observersCount,
     uint16[maxNumOracles] memory observations
   )
     internal
@@ -400,7 +401,7 @@ contract OffchainAggregatorBilling is Owned {
     // reward each observer-participant with the observer reward
     for (uint obsIdx = 0; obsIdx < observers.length; obsIdx++) {
       uint8 observer = uint8(observers[obsIdx]);
-      observations[observer] = saturatingAddUint16(observations[observer], 1);
+      observations[observer] = saturatingAddUint16(observations[observer], uint8(observersCount[obsIdx]));
     }
     return observations;
   }
@@ -569,7 +570,8 @@ contract OffchainAggregatorBilling is Owned {
 
   function reimburseAndRewardOracles(
     uint32 initialGas,
-    bytes memory observers
+    bytes memory observers,
+    bytes memory observerCount
   )
     internal
   {
@@ -578,7 +580,7 @@ contract OffchainAggregatorBilling is Owned {
     // Reward oracles for providing observations. Oracles are not rewarded
     // for providing signatures, because signing is essentially free.
     s_oracleObservationsCounts =
-      oracleRewards(observers, s_oracleObservationsCounts);      // 记录，  提供数据的observer count + 1
+      oracleRewards(observers, observerCount, s_oracleObservationsCounts);      // 记录，  提供数据的observer count + 1
     // Reimburse transmitter of the report for gas usage
     require(txOracle.role == Role.Transmitter,
       "sent by undesignated transmitter"

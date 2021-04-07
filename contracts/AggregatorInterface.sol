@@ -2,10 +2,10 @@
 pragma solidity ^0.7.1;
 
 interface AggregatorInterface {
-  function latestAnswer() external view returns (bytes32, uint8);
+  function latestAnswer() external view returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory);
   function latestTimestamp() external view returns (uint256);
   function latestRound() external view returns (uint256);
-  function getAnswer(uint256 roundId) external view returns (bytes32, uint8);
+  function getAnswer(uint256 roundId) external view returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory);
   function getTimestamp(uint256 roundId) external view returns (uint256);
 
   event AnswerUpdated(bytes32 indexed current, uint256 indexed roundId, uint256 updatedAt);
