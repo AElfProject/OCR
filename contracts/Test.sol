@@ -272,11 +272,11 @@ contract Test {
 
     function recoverAddress(
         bytes32 hash,
-        uint8 v,
+        bytes1 v,
         bytes32 r,
         bytes32 s
     ) public pure returns (address) {
-        return ecrecover(hash, v, r, s);
+        return ecrecover(hash, uint8(v) + 27, r, s);
     }
 
     function getShaHash(bytes calldata _report) public view returns (bytes32) {

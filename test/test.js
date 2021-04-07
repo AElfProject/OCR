@@ -65,7 +65,7 @@ contract('MyTest', (accounts) => {
     let gweiAmount = await testInstance.getGweiAmount();
     assert.equal(gweiAmount.toString(), 1000000000);
     let gasPrice = await testInstance.getGasPrice();
-    console.log(gasPrice.toString());
+    //console.log(gasPrice.toString());
   });
 
   it('decode 4 with multple observations test', async () => {
@@ -95,6 +95,19 @@ contract('MyTest', (accounts) => {
     assert.equal(decodeData._aggregateData, "0x0a05617364617300000000000000000000000000000000000000000000000000", "invalid _aggregateData");
     assert.equal(decodeData._observations.length, 0, "invalid _observations");
     assert.equal(decodeData._observationsLength.length, 0, "invalid _observerOrder");
+  });
+
+  it('sign verification', async () => {
+    const testInstance = await MyTest.deployed();
+    let report = "0x000000000000f6f3ed664fd0e7be332f035ec351acf1000000000000000a0007000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0a056173646173000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000";
+    let address = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";
+    let privateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
+    let hashData = "0x8075a4369dda42e20fa41f7fa2f477ba6fcecfdf0edcdc86979ffdbaac0cad77";
+    let v = "0x00";
+    let r = "0xdf3895ed02447160699037386795a014bbefbea7a9ad3c3973b502dc8cfb5738";
+    let s = "0x40fcc076303729f58aa114be00fc0446593be6659956c45646c311a84f01507c";
+    let recoverAddress = await testInstance.recoverAddress(hashData, v,r,s)
+    assert.equal(recoverAddress, address, "invalid _observerOrder");
   });
 });
 

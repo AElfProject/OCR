@@ -33,9 +33,9 @@ contract('master chef', (accounts) => {
         let signatureOne = web3.eth.accounts.sign(messageHash, signerOnePrivateKey);
         let signatureTwo = web3.eth.accounts.sign(messageHash, signerTwoPrivateKey);
 
-        // console.log(signatureOne.r);
-        // console.log(signatureOne.s);
-        // console.log(signatureOne.v);
+        console.log(signatureOne.r);
+        console.log(signatureOne.s);
+        console.log(signatureOne.v);
         let rs = [signatureOne.r, signatureTwo.r];
         let ss = [signatureOne.s, signatureTwo.s];
         let vs = web3.utils.bytesToHex([signatureOne.v, signatureTwo.v, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0]);
