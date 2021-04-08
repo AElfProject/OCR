@@ -12,9 +12,15 @@ contract('master chef', (accounts) => {
 
         let signerOneAddress = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";
         let signerOnePrivateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
+        let signerOneR = "0xdf3895ed02447160699037386795a014bbefbea7a9ad3c3973b502dc8cfb5738";
+        let signerOneS = "0x40fcc076303729f58aa114be00fc0446593be6659956c45646c311a84f01507c";
+        let signerOneV = 0;
 
         let signerTwoAddress = "0x90aE559e07f46eebF91bD95DD28889ef60A1E87B";
         let signerTwoPrivateKey = "996e00ecd273f49a96b1af85ee24b6724d8ba3d9957c5bdc5fc16fd1067d542a";
+        let signerTwoR = "0x89d764aaca08b717422ccbf5fb173fd3e6b0954407a15392128b214b6f6fed21";
+        let signerTwoS = "0x6809eaf90021b8e53ca0e8ed4123e1e85a559f5110cf9d5da353e8d88b79203b";
+        let signerTwoV = 1;
 
         let transmiters = [transmitterOne, transmitterTwo];
         let payees = [payeeOne, payeeTwo];
@@ -29,16 +35,9 @@ contract('master chef', (accounts) => {
         //console.log(config.configDigest);
 
         let report = "0x000000000000f6f3ed664fd0e7be332f035ec351acf1000000000000000a0007000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0a056173646173000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000";
-        const messageHash = web3.utils.sha3(report);
-        let signatureOne = web3.eth.accounts.sign(messageHash, signerOnePrivateKey);
-        let signatureTwo = web3.eth.accounts.sign(messageHash, signerTwoPrivateKey);
-
-        console.log(signatureOne.r);
-        console.log(signatureOne.s);
-        console.log(signatureOne.v);
-        let rs = [signatureOne.r, signatureTwo.r];
-        let ss = [signatureOne.s, signatureTwo.s];
-        let vs = web3.utils.bytesToHex([signatureOne.v, signatureTwo.v, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0]);
+        let rs = [signerOneR, signerTwoR];
+        let ss = [signerOneS, signerTwoS];
+        let vs = web3.utils.bytesToHex([signerOneV, signerTwoV, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0]);
         await testfInstance.transmit(report, rs, ss, vs);
         let latestAnswer = await testfInstance.latestAnswer();
         assert.equal(latestAnswer['0'], "0x0a05617364617300000000000000000000000000000000000000000000000000", "wrong latest answer");
@@ -70,9 +69,16 @@ contract('master chef', (accounts) => {
 
         let signerOneAddress = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";
         let signerOnePrivateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
+        let signerOneR = "0x366740b1d0afaed7dcabe6008068675a8e65a8cdaa4ed1b2f042ddcec9c242d7";
+        let signerOneS = "0x13afc3c576972824fe5d252c7276639710ff1ee45330948bf335c086241ea8a6";
+        let signerOneV = 1;
+
 
         let signerTwoAddress = "0x90aE559e07f46eebF91bD95DD28889ef60A1E87B";
         let signerTwoPrivateKey = "996e00ecd273f49a96b1af85ee24b6724d8ba3d9957c5bdc5fc16fd1067d542a";
+        let signerTwoR = "0x446dfa1ada5c498c5c689ae0a7c28d8e7f9632465f17574a7841f2c630538e80";
+        let signerTwoS = "0x30974bcb26f23d06f9af47798fd4bc234d03cc3a1467f90a06943c5b2dda1109";
+        let signerTwoV = 0;
 
         let transmiters = [transmitterOne, transmitterTwo];
         let payees = [payeeOne, payeeTwo];
@@ -87,16 +93,9 @@ contract('master chef', (accounts) => {
         //console.log(config.configDigest);
 
         let report = "0x00000000000022d6f8928689ea183a3eb24df3919a94000000000000000b0320000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a080001020000000000000000000000000000000000000000000000000000000000060606000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000030a0431203a3400000000000000000000000000000000000000000000000000000a0431203a3500000000000000000000000000000000000000000000000000000a0431203a360000000000000000000000000000000000000000000000000000";
-        const messageHash = web3.utils.sha3(report);
-        let signatureOne = web3.eth.accounts.sign(messageHash, signerOnePrivateKey);
-        let signatureTwo = web3.eth.accounts.sign(messageHash, signerTwoPrivateKey);
-
-        // console.log(signatureOne.r);
-        // console.log(signatureOne.s);
-        // console.log(signatureOne.v);
-        let rs = [signatureOne.r, signatureTwo.r];
-        let ss = [signatureOne.s, signatureTwo.s];
-        let vs = web3.utils.bytesToHex([signatureOne.v, signatureTwo.v, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0]);
+        let rs = [signerOneR, signerTwoR];
+        let ss = [signerOneS, signerTwoS];
+        let vs = web3.utils.bytesToHex([signerOneV, signerTwoV, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0]);
         await testfInstance.transmit(report, rs, ss, vs);
         let latestAnswer = await testfInstance.latestAnswer();
         //console.log(latestAnswer);

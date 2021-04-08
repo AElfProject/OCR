@@ -544,13 +544,12 @@ contract OffchainAggregator is
         {
             // Verify signatures attached to report
             bytes32 h = keccak256(_report);
-            h = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", h));
             bool[maxNumOracles] memory signed;
 
             Oracle memory o;
             for (uint256 i = 0; i < _rs.length; i++) {
                 address signer =
-                    ecrecover(h, uint8(r.vs[i]), _rs[i], _ss[i]);
+                    ecrecover(h, uint8(r.vs[i]) + 27, _rs[i], _ss[i]);
                 o = s_oracles[signer];
                 require(
                     o.role == Role.Signer,
