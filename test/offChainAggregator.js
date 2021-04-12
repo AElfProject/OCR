@@ -111,12 +111,10 @@ contract('master chef', (accounts) => {
         assert.equal(latestRound, 11, "wrong round id");
 
         let transmitOneObservationCount = await testfInstance.oracleObservationCount(transmitterOne);
-        assert.equal(transmitOneObservationCount.toString(), 0, "wrong round id");
-        console.log(transmitOneObservationCount.toString());
+        assert.equal(transmitOneObservationCount.toString(), 0, "transmitter one  with wrong observer cound");
 
         let transmitTwoObservationCount = await testfInstance.oracleObservationCount(transmitterTwo);
-        assert.equal(latestRound, 11, "wrong round id");
-        console.log(transmitTwoObservationCount.toString());
+        assert.equal(transmitTwoObservationCount.toString(), 1, "transmitter one  with wrong observer cound");
     });
 
     it('configuration test', async () => {
