@@ -122,7 +122,6 @@ contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAcc
       bytes32,
       bytes32,
       bytes32[] memory,
-      uint256,
       uint256
     )
   {
@@ -142,7 +141,6 @@ contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAcc
       bytes32,
       bytes32,
       bytes32[] memory,
-      uint256,
       uint256
     )
   {

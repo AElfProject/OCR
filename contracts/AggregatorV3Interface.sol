@@ -21,7 +21,6 @@ interface AggregatorV3Interface {
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
             bytes32[] memory multipleObservations,
-            uint256 startedAt,
             uint256 updatedAt
         );
 
@@ -35,7 +34,6 @@ interface AggregatorV3Interface {
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
             bytes32[] memory multipleObservations,
-            uint256 startedAt,
             uint256 updatedAt
         );
 }

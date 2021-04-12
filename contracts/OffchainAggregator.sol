@@ -369,14 +369,24 @@ contract OffchainAggregator is
         returns (
             bytes32 rawReportContext,
             bytes32 rawObservers,
-            bytes32 observation
+            bytes32 observersCount,
+            bytes32 observation,
+            bytes32 observationIndex,
+            bytes32 observationLength,
+            bytes32[] memory multipleObservation
         )
     {
         (rawReportContext, rawObservers, observation) = abi.decode(
             _report,
             (bytes32, bytes32, bytes32)
         );
+
+        (rawReportContext, rawObservers, observersCount, observation, observationIndex, observationLength, multipleObservation) = abi.decode(
+                _report,
+                (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
+            );
     }
+
 
     // Used to relieve stack pressure in transmit
     struct ReportData {
@@ -393,7 +403,7 @@ contract OffchainAggregator is
 
    * @return configDigest domain separation tag for the latest report
    * @return latestRoundId OCR round in which the latest report was generated
-   * @return latestAnswer median value from latest report
+   * @return latestAnswer from latest report
    * @return latestTimestamp when the latest report was transmitted
    */
     function latestTransmissionDetails()
@@ -403,15 +413,24 @@ contract OffchainAggregator is
             bytes16 configDigest,
             uint64 latestRoundId,
             bytes32 latestAnswer,
+            uint8 validBytes,
+            bytes32 multipleObservationsIndex,
+            bytes32 multipleObservationsValidBytes,
+            bytes32[] memory multipleObservations,
             uint64 latestTimestamp
         )
     {
         require(msg.sender == tx.origin, "Only callable by EOA");
+        Transmission memory transmission = s_transmissions[s_hotVars.latestRoundId];
         return (
             s_hotVars.latestConfigDigest,
             s_hotVars.latestRoundId,
-            s_transmissions[s_hotVars.latestRoundId].answer,
-            s_transmissions[s_hotVars.latestRoundId].timestamp
+            transmission.answer,
+            transmission.validBytes,
+            transmission.multipleObservationsIndex,
+            transmission.multipleObservationsValidBytes,
+            transmission.multipleObservations,
+            transmission.timestamp
         );
     }
 
@@ -696,7 +715,6 @@ contract OffchainAggregator is
      * @return multipleObservationsIndex it is the observations's order, if there are multiple observations
      * @return multipleObservationsValidBytes it is the observations' length, if there are multiple observations
      * @return multipleObservations concrete answers
-     * @return startedAt timestamp of block in which report from given _roundId was transmitted
      * @return updatedAt timestamp of block in which report from given _roundId was transmitted
      */
     function getRoundData(uint80 _roundId)
@@ -711,7 +729,6 @@ contract OffchainAggregator is
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
             bytes32[] memory multipleObservations,
-            uint256 startedAt,
             uint256 updatedAt
         )
     {
@@ -724,7 +741,6 @@ contract OffchainAggregator is
             transmission.multipleObservationsIndex,
             transmission.multipleObservationsValidBytes,
             transmission.multipleObservations,
-            transmission.timestamp,
             transmission.timestamp
         );
     }
@@ -737,7 +753,6 @@ contract OffchainAggregator is
      * @return multipleObservationsIndex it is the observations's order, if there are multiple observations
      * @return multipleObservationsValidBytes it is the observations' length, if there are multiple observations
      * @return multipleObservations concrete answers
-     * @return startedAt timestamp of block containing latest report
      * @return updatedAt timestamp of block containing latest report
      */
     function latestRoundData()
@@ -752,7 +767,6 @@ contract OffchainAggregator is
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
             bytes32[] memory multipleObservations,
-            uint256 startedAt,
             uint256 updatedAt
         )
     {
@@ -769,7 +783,6 @@ contract OffchainAggregator is
             transmission.multipleObservationsIndex,
             transmission.multipleObservationsValidBytes,
             transmission.multipleObservations,
-            transmission.timestamp,
             transmission.timestamp
         );
     }

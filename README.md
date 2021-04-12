@@ -23,10 +23,8 @@ migrations中有具体的配置信息。
 计算思路：按照用户在AElf上搬运数据的次数进行支付AELink。
 
 ### 合约api
-
+[合约接口文档](https://shimo.im/docs/PPhKYjJ8v8yqQ8tq)
 
 ### 签名工具
 
-Tool/sign.js
-- report： aelf上的report信息。
-- private key： 签名需要的私钥。
+c#
