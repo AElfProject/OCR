@@ -153,9 +153,9 @@ contract Test {
     public
     view
     returns (
+        uint8 _count,
         uint8 _validBytesCount,
-        uint8[] memory _observerIndex, 
-        uint8[] memory _observerCount,
+        bytes32 _observerCount,
         bytes32 _aggregateData,
         uint8[] memory _observerOrder,
         uint8[] memory _observationsLength,
@@ -173,9 +173,9 @@ contract Test {
             _report,
             (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
         );
+      _observerCount = observerCount;
+      _count = uint8(bytes1(configDigest << 240));
       _validBytesCount = uint8(uint256(configDigest));
-      _observerIndex = new uint8[](32);
-      _observerCount = new uint8[](32);
       _aggregateData = aggregateData;
       _observerOrder = new uint8[](observations.length);
       _observationsLength = new uint8[](observations.length);

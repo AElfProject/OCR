@@ -27,4 +27,4 @@ migrations中有具体的配置信息。
 
 ### 签名工具
 
-c#
+参考AElfProject/aelf-oracle项目中的Contracts/ReportGenerator。

@@ -10,14 +10,14 @@ contract('master chef', (accounts) => {
         let transmitterTwo = accounts[3];
         let payeeTwo = accounts[4];
 
-        let signerOneAddress = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";
-        let signerOnePrivateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
+        let signerOneAddress = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";  // generate on aelf
+        //let signerOnePrivateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
         let signerOneR = "0xdf3895ed02447160699037386795a014bbefbea7a9ad3c3973b502dc8cfb5738";
         let signerOneS = "0x40fcc076303729f58aa114be00fc0446593be6659956c45646c311a84f01507c";
         let signerOneV = 0;
 
-        let signerTwoAddress = "0x90aE559e07f46eebF91bD95DD28889ef60A1E87B";
-        let signerTwoPrivateKey = "996e00ecd273f49a96b1af85ee24b6724d8ba3d9957c5bdc5fc16fd1067d542a";
+        let signerTwoAddress = "0x90aE559e07f46eebF91bD95DD28889ef60A1E87B";  // generated on aelf
+        //let signerTwoPrivateKey = "996e00ecd273f49a96b1af85ee24b6724d8ba3d9957c5bdc5fc16fd1067d542a";
         let signerTwoR = "0x89d764aaca08b717422ccbf5fb173fd3e6b0954407a15392128b214b6f6fed21";
         let signerTwoS = "0x6809eaf90021b8e53ca0e8ed4123e1e85a559f5110cf9d5da353e8d88b79203b";
         let signerTwoV = 1;
@@ -67,15 +67,15 @@ contract('master chef', (accounts) => {
         let transmitterTwo = accounts[3];
         let payeeTwo = accounts[4];
 
-        let signerOneAddress = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";
-        let signerOnePrivateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
+        let signerOneAddress = "0x824b3998700F7dcB7100D484c62a7b472B6894B6";  // generated on aelf
+        //let signerOnePrivateKey = "7f6965ae260469425ae839f5abc85b504883022140d5f6fc9664a96d480c068d";
         let signerOneR = "0x366740b1d0afaed7dcabe6008068675a8e65a8cdaa4ed1b2f042ddcec9c242d7";
         let signerOneS = "0x13afc3c576972824fe5d252c7276639710ff1ee45330948bf335c086241ea8a6";
         let signerOneV = 1;
 
 
-        let signerTwoAddress = "0x90aE559e07f46eebF91bD95DD28889ef60A1E87B";
-        let signerTwoPrivateKey = "996e00ecd273f49a96b1af85ee24b6724d8ba3d9957c5bdc5fc16fd1067d542a";
+        let signerTwoAddress = "0x90aE559e07f46eebF91bD95DD28889ef60A1E87B";  // generated on aelf
+        //let signerTwoPrivateKey = "996e00ecd273f49a96b1af85ee24b6724d8ba3d9957c5bdc5fc16fd1067d542a";
         let signerTwoR = "0x446dfa1ada5c498c5c689ae0a7c28d8e7f9632465f17574a7841f2c630538e80";
         let signerTwoS = "0x30974bcb26f23d06f9af47798fd4bc234d03cc3a1467f90a06943c5b2dda1109";
         let signerTwoV = 0;
@@ -109,6 +109,29 @@ contract('master chef', (accounts) => {
         assert.equal(latestAnswer['4'][2], "0x0a0431203a360000000000000000000000000000000000000000000000000000", "invalid observation at index 2");
         let latestRound = await testfInstance.latestRound();
         assert.equal(latestRound, 11, "wrong round id");
+
+        let transmitOneObservationCount = await testfInstance.oracleObservationCount(transmitterOne);
+        assert.equal(transmitOneObservationCount.toString(), 0, "wrong round id");
+        console.log(transmitOneObservationCount.toString());
+
+        let transmitTwoObservationCount = await testfInstance.oracleObservationCount(transmitterTwo);
+        assert.equal(latestRound, 11, "wrong round id");
+        console.log(transmitTwoObservationCount.toString());
+    });
+
+    it('configuration test', async () => {
+        const testfInstance = await testContract.deployed();
+        await testfInstance.requestNewRound();
+        let requestNewRoundEvent = (await testfInstance.getPastEvents('RoundRequested'))[0].returnValues;
+        assert.equal(requestNewRoundEvent.requester, accounts[0], "invalid requester info");
+        assert.equal(requestNewRoundEvent.roundId, 11, "current round id should be 11");
+        await testfInstance.setBilling(1000, 500, 400, 500, 800);
+        let billingInfo = await testfInstance.getBilling();
+        assert.equal(billingInfo.maximumGasPrice, 1000, "wrong maximumGasPrice");
+        assert.equal(billingInfo.reasonableGasPrice, 500, "wrong reasonableGasPrice");
+        assert.equal(billingInfo.microLinkPerEth, 400, "wrong microLinkPerEth");
+        assert.equal(billingInfo.linkGweiPerObservation, 500, "wrong linkGweiPerObservation");
+        assert.equal(billingInfo.linkGweiPerTransmission, 800, "wrong linkGweiPerTransmission");
     });
 });
 
