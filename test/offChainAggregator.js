@@ -52,7 +52,7 @@ contract('master chef', (accounts) => {
         assert.equal(payeeOneBal, 0, "before withrawing, balance should be 0");
         let owedPayment = await testfInstance.owedPayment(transmitterOne);
 
-        let depositAmount = '100000000000000000000000';
+        let depositAmount = '10000000000000000';
         await linkTokenInstance.deposit(testContract.address, depositAmount);
         await testfInstance.withdrawPayment(transmitterOne, {from: payeeOne});
         payeeOneBal = await linkTokenInstance.balanceOf(payeeOne);
@@ -61,7 +61,6 @@ contract('master chef', (accounts) => {
 
     it('multiple observations', async () => {
         const testfInstance = await testContract.deployed();
-        const linkTokenInstance = await LinkContract.deployed();
         let transmitterOne = accounts[0];
         let payeeOne = accounts[1];
         let transmitterTwo = accounts[3];
@@ -119,10 +118,14 @@ contract('master chef', (accounts) => {
 
     it('configuration test', async () => {
         const testfInstance = await testContract.deployed();
+        const linkTokenInstance = await LinkContract.deployed();
         await testfInstance.requestNewRound();
         let requestNewRoundEvent = (await testfInstance.getPastEvents('RoundRequested'))[0].returnValues;
         assert.equal(requestNewRoundEvent.requester, accounts[0], "invalid requester info");
         assert.equal(requestNewRoundEvent.roundId, 11, "current round id should be 11");
+        let transmitter = accounts[3];
+        let owedPayment = await testfInstance.owedPayment(transmitter);
+        assert.equal(owedPayment > 0, true, "invalid owedPayment for transmitter two");
         await testfInstance.setBilling(1000, 500, 400, 500, 800);
         let billingInfo = await testfInstance.getBilling();
         assert.equal(billingInfo.maximumGasPrice, 1000, "wrong maximumGasPrice");
@@ -130,6 +133,24 @@ contract('master chef', (accounts) => {
         assert.equal(billingInfo.microLinkPerEth, 400, "wrong microLinkPerEth");
         assert.equal(billingInfo.linkGweiPerObservation, 500, "wrong linkGweiPerObservation");
         assert.equal(billingInfo.linkGweiPerTransmission, 800, "wrong linkGweiPerTransmission");
+        owedPayment = await testfInstance.owedPayment(transmitter);
+        assert.equal(owedPayment == 0, true, "invalid owedPayment for transmitter two");
+        let recipient = accounts[9];
+        let linkBal = await testfInstance.linkAvailableForPayment();
+        let beforeBal = await linkTokenInstance.balanceOf(recipient);
+        assert.equal(beforeBal, 0, "recipient bal should be 0");
+        await testfInstance.withdrawFunds(recipient, linkBal);
+        let afterBal = await linkTokenInstance.balanceOf(recipient);
+        assert.equal(afterBal - beforeBal, linkBal, "recipient bal should be avaliable link");
+        let newPayeeForTransmitter = accounts[8];
+        await testfInstance.transferPayeeship(transmitter, newPayeeForTransmitter,{from: accounts[4]});
+        let payeeshipTransferRequested = (await testfInstance.getPastEvents('PayeeshipTransferRequested'))[0].returnValues;
+        assert.equal(payeeshipTransferRequested.transmitter, transmitter, "wrong transmitter");
+        assert.equal(payeeshipTransferRequested.current, accounts[4], "wrong transmitter");
+        assert.equal(payeeshipTransferRequested.proposed, newPayeeForTransmitter, "wrong transmitter");
+        await testfInstance.acceptPayeeship(transmitter, {from: newPayeeForTransmitter});
+        let payeeshipTransferred = (await testfInstance.getPastEvents('PayeeshipTransferred'))[0].returnValues;
+        assert.equal(payeeshipTransferred.current, newPayeeForTransmitter, "faile to update");
     });
 });
 
