@@ -251,14 +251,6 @@ contract OffchainAggregator is
     function transmitters() external view returns (address[] memory) {
         return s_transmitters;
     }
-
-    /**
-     * @notice indicates that the address of the validator contract has been set
-     * @param previous setting of the address prior to this event
-     * @param current the new value for the address
-     */
-    event ValidatorUpdated(address indexed previous, address indexed current);
-
     /*
      * requestNewRound logic
      */
