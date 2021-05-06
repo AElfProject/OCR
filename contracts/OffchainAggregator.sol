@@ -368,11 +368,6 @@ contract OffchainAggregator is
             bytes32[] memory multipleObservation
         )
     {
-        (rawReportContext, rawObservers, observation) = abi.decode(
-            _report,
-            (bytes32, bytes32, bytes32)
-        );
-
         (rawReportContext, rawObservers, observersCount, observation, observationIndex, observationLength, multipleObservation) = abi.decode(
                 _report,
                 (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
