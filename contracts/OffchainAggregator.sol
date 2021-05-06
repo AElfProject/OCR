@@ -6,6 +6,7 @@ import "./AggregatorV2V3Interface.sol";
 import "./LinkTokenInterface.sol";
 import "./Owned.sol";
 import "./OffchainAggregatorBilling.sol";
+import "../interfaces/IRecordMerkleTree.sol";
 
 /**
   * @notice Onchain verification of reports from the offchain reporting protocol
@@ -49,7 +50,8 @@ contract OffchainAggregator is
     // into the config digest, to prevent replay attacks.
     uint32 internal s_configCount;
     uint32 internal s_latestConfigBlockNumber; // makes it easier for offchain systems
-    // to extract config from logs.
+
+    IRecordMerkleTree public recorder;
 
     /*
      * @param _maximumGasPrice highest gas price for which transmitter will be compensated
@@ -113,10 +115,7 @@ contract OffchainAggregator is
     );
 
     // Reverts transaction if config args are invalid
-    modifier checkConfigValid(
-        uint256 _numSigners,
-        uint256 _numTransmitters
-    ) {
+    modifier checkConfigValid(uint256 _numSigners, uint256 _numTransmitters) {
         require(_numSigners <= maxNumOracles, "too many signers");
         require(
             _numSigners == _numTransmitters,
@@ -251,6 +250,7 @@ contract OffchainAggregator is
     function transmitters() external view returns (address[] memory) {
         return s_transmitters;
     }
+
     /*
      * requestNewRound logic
      */
@@ -368,17 +368,19 @@ contract OffchainAggregator is
             bytes32[] memory multipleObservation
         )
     {
-        (rawReportContext, rawObservers, observation) = abi.decode(
+        (
+            rawReportContext,
+            rawObservers,
+            observersCount,
+            observation,
+            observationIndex,
+            observationLength,
+            multipleObservation
+        ) = abi.decode(
             _report,
-            (bytes32, bytes32, bytes32)
+            (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
         );
-
-        (rawReportContext, rawObservers, observersCount, observation, observationIndex, observationLength, multipleObservation) = abi.decode(
-                _report,
-                (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
-            );
     }
-
 
     // Used to relieve stack pressure in transmit
     struct ReportData {
@@ -413,7 +415,8 @@ contract OffchainAggregator is
         )
     {
         require(msg.sender == tx.origin, "Only callable by EOA");
-        Transmission memory transmission = s_transmissions[s_hotVars.latestRoundId];
+        Transmission memory transmission =
+            s_transmissions[s_hotVars.latestRoundId];
         return (
             s_hotVars.latestConfigDigest,
             s_hotVars.latestRoundId,
@@ -493,9 +496,25 @@ contract OffchainAggregator is
             bytes32 observationIndex;
             bytes32 observationLength;
             bytes32[] memory multipleObservation;
-            (r.rawReportContext, rawObservers, observersCount, r.observation, observationIndex, observationLength, multipleObservation) = abi.decode(
+            (
+                r.rawReportContext,
+                rawObservers,
+                observersCount,
+                r.observation,
+                observationIndex,
+                observationLength,
+                multipleObservation
+            ) = abi.decode(
                 _report,
-                (bytes32, bytes32, bytes32, bytes32, bytes32, bytes32, bytes32[])
+                (
+                    bytes32,
+                    bytes32,
+                    bytes32,
+                    bytes32,
+                    bytes32,
+                    bytes32,
+                    bytes32[]
+                )
             );
 
             // rawReportContext consists of:
@@ -512,7 +531,10 @@ contract OffchainAggregator is
             );
 
             roundId = uint64(bytes8(r.rawReportContext << 176));
-            require(s_transmissions[roundId].timestamp == 0, "data has been transmitted");
+            require(
+                s_transmissions[roundId].timestamp == 0,
+                "data has been transmitted"
+            );
 
             uint8 observerCount = uint8(bytes1(r.rawReportContext << 240));
             s_transmissions[roundId] = Transmission(
@@ -572,8 +594,15 @@ contract OffchainAggregator is
         }
 
         {
-            if(roundId > r.hotVars.latestRoundId){
+            if (roundId > r.hotVars.latestRoundId) {
                 r.hotVars.latestRoundId = roundId;
+            }
+            if (address(recorder) != address(0)) {
+                recorder.recordMerkleTree(
+                    roundId,
+                    uint256(s_transmissions[roundId].multipleObservations[0]),
+                    s_transmissions[roundId].multipleObservations[1]
+                );
             }
             emit NewTransmission(
                 r.hotVars.latestRoundId,
@@ -596,23 +625,51 @@ contract OffchainAggregator is
             );
         }
         s_hotVars = r.hotVars;
-        assert(initialGas < maxUint32);  // ？
-        reimburseAndRewardOracles(uint32(initialGas), r.observers, r.observersCount);
+        assert(initialGas < maxUint32); // ？
+        reimburseAndRewardOracles(
+            uint32(initialGas),
+            r.observers,
+            r.observersCount
+        );
+    }
+
+    /*
+     * IRecordMerkleTree interface
+     */
+
+    function setRecorder(IRecordMerkleTree _recorder)
+        external
+        virtual
+        onlyOwner()
+    {
+        recorder = _recorder;
     }
 
     /*
      * v2 Aggregator interface
      */
 
-    /**
-     * @notice median from the most recent report
-     */
-    function latestAnswer() public view virtual override returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory) {
-        return (s_transmissions[s_hotVars.latestRoundId].answer, 
-                s_transmissions[s_hotVars.latestRoundId].validBytes,
-                s_transmissions[s_hotVars.latestRoundId].multipleObservationsIndex,
-                s_transmissions[s_hotVars.latestRoundId].multipleObservationsValidBytes,
-                s_transmissions[s_hotVars.latestRoundId].multipleObservations);
+    function latestAnswer()
+        public
+        view
+        virtual
+        override
+        returns (
+            bytes32,
+            uint8,
+            bytes32,
+            bytes32,
+            bytes32[] memory
+        )
+    {
+        return (
+            s_transmissions[s_hotVars.latestRoundId].answer,
+            s_transmissions[s_hotVars.latestRoundId].validBytes,
+            s_transmissions[s_hotVars.latestRoundId].multipleObservationsIndex,
+            s_transmissions[s_hotVars.latestRoundId]
+                .multipleObservationsValidBytes,
+            s_transmissions[s_hotVars.latestRoundId].multipleObservations
+        );
     }
 
     /**
@@ -638,16 +695,24 @@ contract OffchainAggregator is
         view
         virtual
         override
-        returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory)
+        returns (
+            bytes32,
+            uint8,
+            bytes32,
+            bytes32,
+            bytes32[] memory
+        )
     {
         if (_roundId > 0xFFFFFFFF) {
             return (0, 0, 0, 0, new bytes32[](0));
         }
-        return (s_transmissions[uint32(_roundId)].answer, 
-                s_transmissions[uint32(_roundId)].validBytes,
-                s_transmissions[uint32(_roundId)].multipleObservationsIndex,
-                s_transmissions[uint32(_roundId)].multipleObservationsValidBytes,
-                s_transmissions[uint32(_roundId)].multipleObservations);
+        return (
+            s_transmissions[uint32(_roundId)].answer,
+            s_transmissions[uint32(_roundId)].validBytes,
+            s_transmissions[uint32(_roundId)].multipleObservationsIndex,
+            s_transmissions[uint32(_roundId)].multipleObservationsValidBytes,
+            s_transmissions[uint32(_roundId)].multipleObservations
+        );
     }
 
     /**
