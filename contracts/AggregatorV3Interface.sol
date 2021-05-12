@@ -36,4 +36,9 @@ interface AggregatorV3Interface {
             bytes32[] memory multipleObservations,
             uint256 updatedAt
         );
+
+    function getAnswerByIndex(uint256 roundId, uint8 index)
+        external
+        view
+        returns (string memory);
 }
