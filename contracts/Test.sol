@@ -296,4 +296,10 @@ contract Test {
     function getGasPrice() public view returns (uint256) {
       return tx.gasprice;
     }
+
+    function getString(bytes calldata stringBytes, uint8 validBytes) public view returns(string memory){
+        bytes memory validString = new bytes(validBytes);
+        validString = stringBytes;
+        return string(validString);
+    }
 }

@@ -18,11 +18,10 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+const HDWalletProvider = require("truffle-hdwallet-provider");
+const dotenv = require('.secret');
+const process = dotenv.config();
+var keys = [process.env.kovan_key0, process.env.kovan_key1, process.env.kovan_key2, process.env.kovan_key3];
 
 module.exports = {
   /**
@@ -42,6 +41,13 @@ module.exports = {
     // tab if you use this network and you must also set the `host`, `port` and `network_id`
     // options below to some value.
     //
+    kovan: {
+      provider: new HDWalletProvider(keys, "https://kovan.infura.io/v3/" + process.infura_apikey, 0, 4),
+      network_id: 42,
+      gas: 3012388,
+      gasPrice: 30000000000,
+      networkCheckTimeout: 10000000
+    }
     // development: {
     //  host: "127.0.0.1",     // Localhost (default: none)
     //  port: 7545,            // Standard Ethereum port (default: none)
@@ -92,5 +98,11 @@ module.exports = {
       //  evmVersion: "byzantium"
       }
     }
+  },
+  plugins: [
+    'truffle-plugin-verify', 'truffle-contract-size'
+  ],
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API_KEY
   }
 };
