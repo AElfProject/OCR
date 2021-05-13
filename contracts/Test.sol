@@ -301,7 +301,13 @@ contract Test {
         bytes memory validString = substr(bytes(stringBytes), 0, validBytes);
         return string(validString);
     }
-    
+
+    function getStringFromBytes32() public view returns(string memory){
+        bytes32 foo = "hello";
+        string memory bar = string(abi.encodePacked(foo));
+        return bar;
+    }
+
     // Size of a word, in bytes.
     uint internal constant WORD_SIZE = 32;
 

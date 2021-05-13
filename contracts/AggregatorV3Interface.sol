@@ -37,7 +37,7 @@ interface AggregatorV3Interface {
             uint256 updatedAt
         );
 
-    function getAnswerByIndex(uint256 roundId, uint8 index)
+    function getStringAnswerByIndex(uint256 roundId, uint8 index)
         external
         view
         returns (string memory);

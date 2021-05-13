@@ -703,7 +703,7 @@ contract OffchainAggregator is
      * @param _roundId the aggregator round of the target report
      * @param _index data index
      */
-    function getAnswerByIndex(uint256 _roundId, uint8 _index)
+    function getStringAnswerByIndex(uint256 _roundId, uint8 _index)
         public
         virtual
         override
@@ -713,21 +713,14 @@ contract OffchainAggregator is
         Transmission memory transmission =
                 s_transmissions[uint32(_roundId)];
         uint256 observationCount = transmission.multipleObservations.length;
-        
-        uint8 validBytes;
         bytes32 observation;
         for(uint256 i = 0; i < observationCount; i ++){
             if(_index == uint8(transmission.multipleObservationsIndex[i])){
-                validBytes = uint8(transmission.multipleObservationsValidBytes[i]);
                 observation = transmission.multipleObservations[i];
                 break;
             }
         }
-        bytes memory answer = new bytes(validBytes);
-        for(uint256 i = 0; i < validBytes; i ++){
-            answer[i] = observation[i];
-        }
-        return string(answer);
+        return string(abi.encodePacked(observation));
     }
 
     /**

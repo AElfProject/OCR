@@ -97,7 +97,7 @@ contract AccessControlledOffchainAggregator is
         return super.getAnswer(_roundId);
     }
 
-    function getAnswerByIndex(uint256 _roundId, uint8 _index)
+    function getStringAnswerByIndex(uint256 _roundId, uint8 _index)
         public
         view
         override
@@ -106,7 +106,7 @@ contract AccessControlledOffchainAggregator is
           string memory
         )
     {
-        return super.getAnswerByIndex(_roundId, _index);
+        return super.getStringAnswerByIndex(_roundId, _index);
     }
 
     /// @inheritdoc OffchainAggregator

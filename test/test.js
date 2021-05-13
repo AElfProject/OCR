@@ -121,7 +121,8 @@ contract('MyTest', (accounts) => {
   it('test bytes copy', async () => {
     const testInstance = await MyTest.deployed();
     let a = await testInstance.getString("lw", 2);
-    console.log(a);
+    assert.equal(a, "lw", "invalid get string");
+    let b = await testInstance.getStringFromBytes32();
   });
 });
 
