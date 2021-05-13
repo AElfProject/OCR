@@ -117,5 +117,11 @@ contract('MyTest', (accounts) => {
     let recoverAddress = await testInstance.recoverAddress(hashData, v,r,s)
     assert.equal(recoverAddress, address, "invalid _observerOrder");
   });
+  
+  it('test bytes copy', async () => {
+    const testInstance = await MyTest.deployed();
+    let a = await testInstance.getString("lw", 2);
+    console.log(a);
+  });
 });
 
