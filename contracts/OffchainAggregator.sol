@@ -733,6 +733,9 @@ contract OffchainAggregator is
         Transmission memory transmission =
                 s_transmissions[uint32(_roundId)];
         uint256 observationCount = transmission.multipleObservations.length;
+        if(observationCount == 0){
+            return (new uint8[](0), string(abi.encodePacked(transmission.answer)));
+        }
         _index = new uint8[](observationCount);
         for(uint256 i = 0; i < observationCount; i ++){
             _index[i] = uint8(transmission.multipleObservationsIndex[i]);
