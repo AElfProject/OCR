@@ -723,6 +723,26 @@ contract OffchainAggregator is
         return string(abi.encodePacked(observation));
     }
 
+    function getLatestStringAnswerByIndex(uint8 _index)
+        public
+        virtual
+        override
+        view
+        returns (string memory)
+    {
+        Transmission memory transmission =
+                s_transmissions[s_hotVars.latestRoundId];
+        uint256 observationCount = transmission.multipleObservations.length;
+        bytes32 observation;
+        for(uint256 i = 0; i < observationCount; i ++){
+            if(_index == uint8(transmission.multipleObservationsIndex[i])){
+                observation = transmission.multipleObservations[i];
+                break;
+            }
+        }
+        return string(abi.encodePacked(observation));
+    }
+
     function getStringAnswer(uint256 _roundId)
         public
         virtual
@@ -732,6 +752,32 @@ contract OffchainAggregator is
     {
         Transmission memory transmission =
                 s_transmissions[uint32(_roundId)];
+        uint256 observationCount = transmission.multipleObservations.length;
+        if(observationCount == 0){
+            return (new uint8[](0), string(abi.encodePacked(transmission.answer)));
+        }
+        _index = new uint8[](observationCount);
+        for(uint256 i = 0; i < observationCount; i ++){
+            _index[i] = uint8(transmission.multipleObservationsIndex[i]);
+            string memory observation = string(abi.encodePacked(transmission.multipleObservations[i]));
+            if(i == 0){
+                _answerSet = observation;
+            }
+            else{
+                _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
+            }
+        }
+    }
+
+    function getLatestStringAnswer()
+        public
+        virtual
+        override
+        view
+        returns (uint8[] memory _index, string memory _answerSet)
+    {
+        Transmission memory transmission =
+                s_transmissions[s_hotVars.latestRoundId];
         uint256 observationCount = transmission.multipleObservations.length;
         if(observationCount == 0){
             return (new uint8[](0), string(abi.encodePacked(transmission.answer)));
