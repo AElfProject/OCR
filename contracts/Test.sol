@@ -365,4 +365,9 @@ contract Test {
             mstore(dest, or(destpart, srcpart))
         }
     }
+
+    function concatString(string memory a, string memory b, string memory c) public view returns (string memory ret){
+        ret = string(abi.encodePacked(a, ";", b));
+        ret = string(abi.encodePacked(ret, ";", c));
+    }
 }

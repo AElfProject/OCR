@@ -723,6 +723,29 @@ contract OffchainAggregator is
         return string(abi.encodePacked(observation));
     }
 
+    function getStringAnswer(uint256 _roundId)
+        public
+        virtual
+        override
+        view
+        returns (uint8[] memory _index, string memory _answerSet)
+    {
+        Transmission memory transmission =
+                s_transmissions[uint32(_roundId)];
+        uint256 observationCount = transmission.multipleObservations.length;
+        _index = new uint8[](observationCount);
+        for(uint256 i = 0; i < observationCount; i ++){
+            _index[i] = uint8(transmission.multipleObservationsIndex[i]);
+            string memory observation = string(abi.encodePacked(transmission.multipleObservations[i]));
+            if(i == 0){
+                _answerSet = observation;
+            }
+            else{
+                _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
+            }
+        }
+    }
+
     /**
      * @notice timestamp of block in which report from given aggregator round was transmitted
      * @param _roundId aggregator round (NOT OCR round) of target report

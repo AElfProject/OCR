@@ -109,6 +109,16 @@ contract AccessControlledOffchainAggregator is
         return super.getStringAnswerByIndex(_roundId, _index);
     }
 
+    function getStringAnswer(uint256 _roundId)
+        public
+        view
+        override
+        checkAccess()
+        returns (uint8[] memory _index, string memory _answerSet)
+    {
+        return super.getStringAnswer(_roundId);
+    }
+
     /// @inheritdoc OffchainAggregator
     function getTimestamp(uint256 _roundId)
         public

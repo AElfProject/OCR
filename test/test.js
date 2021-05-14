@@ -123,6 +123,12 @@ contract('MyTest', (accounts) => {
     let a = await testInstance.getString("lw", 2);
     assert.equal(a, "lw", "invalid get string");
     let b = await testInstance.getStringFromBytes32();
+
+    let stringOne = "undefined";  // 'undefined'
+    let stringTwo = "asddw"; // 'asddw'
+    let stringThree = "lww" // "lww"
+    let concateString = await testInstance.concatString(stringOne, stringTwo, stringThree);
+    console.log(concateString);
   });
 });
 
