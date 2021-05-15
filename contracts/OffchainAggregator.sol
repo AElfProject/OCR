@@ -754,7 +754,7 @@ contract OffchainAggregator is
                 s_transmissions[uint32(_roundId)];
         uint256 observationCount = transmission.multipleObservations.length;
         if(observationCount == 0){
-            return (new uint8[](0), string(abi.encodePacked(transmission.answer)));
+            return (new uint8[](0), bytes32ToString(transmission.answer));
         }
         _index = new uint8[](observationCount);
         for(uint256 i = 0; i < observationCount; i ++){
@@ -780,7 +780,7 @@ contract OffchainAggregator is
                 s_transmissions[s_hotVars.latestRoundId];
         uint256 observationCount = transmission.multipleObservations.length;
         if(observationCount == 0){
-            return (new uint8[](0), string(abi.encodePacked(transmission.answer)));
+            return (new uint8[](0), bytes32ToString(transmission.answer));
         }
         _index = new uint8[](observationCount);
         for(uint256 i = 0; i < observationCount; i ++){
