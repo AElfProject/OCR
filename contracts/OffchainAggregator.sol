@@ -720,7 +720,7 @@ contract OffchainAggregator is
                 break;
             }
         }
-        return string(abi.encodePacked(observation));
+        return bytes32ToString(observation);
     }
 
     function getLatestStringAnswerByIndex(uint8 _index)
@@ -740,7 +740,7 @@ contract OffchainAggregator is
                 break;
             }
         }
-        return string(abi.encodePacked(observation));
+        return bytes32ToString(observation);
     }
 
     function getStringAnswer(uint256 _roundId)
@@ -759,7 +759,7 @@ contract OffchainAggregator is
         _index = new uint8[](observationCount);
         for(uint256 i = 0; i < observationCount; i ++){
             _index[i] = uint8(transmission.multipleObservationsIndex[i]);
-            string memory observation = string(abi.encodePacked(transmission.multipleObservations[i]));
+            string memory observation = bytes32ToString(transmission.multipleObservations[i]);
             if(i == 0){
                 _answerSet = observation;
             }
@@ -785,7 +785,7 @@ contract OffchainAggregator is
         _index = new uint8[](observationCount);
         for(uint256 i = 0; i < observationCount; i ++){
             _index[i] = uint8(transmission.multipleObservationsIndex[i]);
-            string memory observation = string(abi.encodePacked(transmission.multipleObservations[i]));
+            string memory observation = bytes32ToString(transmission.multipleObservations[i]);
             if(i == 0){
                 _answerSet = observation;
             }
@@ -793,6 +793,18 @@ contract OffchainAggregator is
                 _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
             }
         }
+    }
+
+    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
+        uint8 i = 0;
+        while(i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
     }
 
     /**

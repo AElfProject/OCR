@@ -302,9 +302,8 @@ contract Test {
         return string(validString);
     }
 
-    function getStringFromBytes32() public view returns(string memory){
-        bytes32 foo = "hello";
-        string memory bar = string(abi.encodePacked(foo));
+    function getStringFromBytes(bytes memory stringbytes) public view returns(string memory){
+        string memory bar = string(abi.encodePacked(stringbytes));
         return bar;
     }
 
@@ -369,5 +368,18 @@ contract Test {
     function concatString(string memory a, string memory b, string memory c) public view returns (string memory ret){
         ret = string(abi.encodePacked(a, ";", b));
         ret = string(abi.encodePacked(ret, ";", c));
+    }
+
+    function concatString2(bytes32 a, bytes32 b, bytes32 c) public view returns (string memory ret){
+        ret = string(abi.encodePacked(a));
+        ret = string(abi.encodePacked(ret, ';', b));
+        ret = string(abi.encodePacked(ret, ";", c));
+    }
+
+    function concatBytes(bytes32 a, bytes32 b, bytes32 c) public view returns (bytes memory ret){
+        string memory retStr = string(abi.encodePacked(a));
+        retStr = string(abi.encodePacked(retStr, ";", b));
+        retStr = string(abi.encodePacked(retStr, ";", c));
+        ret = bytes(retStr);
     }
 }

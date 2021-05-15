@@ -122,12 +122,16 @@ contract('MyTest', (accounts) => {
     const testInstance = await MyTest.deployed();
     let a = await testInstance.getString("lw", 2);
     assert.equal(a, "lw", "invalid get string");
-    let b = await testInstance.getStringFromBytes32();
 
     let stringOne = "undefined";  // 'undefined'
     let stringTwo = "asddw"; // 'asddw'
     let stringThree = "lww" // "lww"
     let concateString = await testInstance.concatString(stringOne, stringTwo, stringThree);
+
+    let ob1 = "0x34393333302e3235343030323034313232343833373000000000000000000000";
+    let ob2 = "0x302e333933373838363838373838323737330000000000000000000000000000";
+    let ob3 = "0x343030332e323038333436343031373139363932350000000000000000000000";
+    concateString = await testInstance.concatBytes(ob1, ob2, ob3);
     console.log(concateString);
   });
 });
