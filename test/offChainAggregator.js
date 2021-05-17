@@ -1,10 +1,10 @@
 const testContract = artifacts.require("AccessControlledOffchainAggregator");
-const LinkContract = artifacts.require("MockLinkToken");
+const PortContract = artifacts.require("MockPortToken");
 
 contract('master chef', (accounts) => {
     it('single one observation', async () => {
         const testfInstance = await testContract.deployed();
-        const linkTokenInstance = await LinkContract.deployed();
+        const portTokenInstance = await PortContract.deployed();
         let transmitterOne = accounts[0];
         let payeeOne = accounts[1];
         let transmitterTwo = accounts[3];
@@ -48,14 +48,14 @@ contract('master chef', (accounts) => {
         let latestRound = await testfInstance.latestRound();
         assert.equal(latestRound, 10, "wrong round id");
 
-        let payeeOneBal = await linkTokenInstance.balanceOf(payeeOne);
+        let payeeOneBal = await portTokenInstance.balanceOf(payeeOne);
         assert.equal(payeeOneBal, 0, "before withrawing, balance should be 0");
         let owedPayment = await testfInstance.owedPayment(transmitterOne);
 
         let depositAmount = '10000000000000000';
-        await linkTokenInstance.deposit(testContract.address, depositAmount);
+        await portTokenInstance.deposit(testContract.address, depositAmount);
         await testfInstance.withdrawPayment(transmitterOne, {from: payeeOne});
-        payeeOneBal = await linkTokenInstance.balanceOf(payeeOne);
+        payeeOneBal = await portTokenInstance.balanceOf(payeeOne);
         assert.equal(payeeOneBal.toString(), owedPayment.toString(), "withdraw failed");
     });
 
@@ -118,7 +118,7 @@ contract('master chef', (accounts) => {
 
     it('configuration test', async () => {
         const testfInstance = await testContract.deployed();
-        const linkTokenInstance = await LinkContract.deployed();
+        const portTokenInstance = await PortContract.deployed();
         await testfInstance.requestNewRound();
         let requestNewRoundEvent = (await testfInstance.getPastEvents('RoundRequested'))[0].returnValues;
         assert.equal(requestNewRoundEvent.requester, accounts[0], "invalid requester info");
@@ -130,18 +130,18 @@ contract('master chef', (accounts) => {
         let billingInfo = await testfInstance.getBilling();
         assert.equal(billingInfo.maximumGasPrice, 1000, "wrong maximumGasPrice");
         assert.equal(billingInfo.reasonableGasPrice, 500, "wrong reasonableGasPrice");
-        assert.equal(billingInfo.microLinkPerEth, 400, "wrong microLinkPerEth");
-        assert.equal(billingInfo.linkGweiPerObservation, 500, "wrong linkGweiPerObservation");
-        assert.equal(billingInfo.linkGweiPerTransmission, 800, "wrong linkGweiPerTransmission");
+        assert.equal(billingInfo.microPortPerEth, 400, "wrong microPortPerEth");
+        assert.equal(billingInfo.portGweiPerObservation, 500, "wrong portGweiPerObservation");
+        assert.equal(billingInfo.portGweiPerTransmission, 800, "wrong portGweiPerTransmission");
         owedPayment = await testfInstance.owedPayment(transmitter);
         assert.equal(owedPayment == 0, true, "invalid owedPayment for transmitter two");
         let recipient = accounts[9];
-        let linkBal = await testfInstance.linkAvailableForPayment();
-        let beforeBal = await linkTokenInstance.balanceOf(recipient);
+        let portBal = await testfInstance.portAvailableForPayment();
+        let beforeBal = await portTokenInstance.balanceOf(recipient);
         assert.equal(beforeBal, 0, "recipient bal should be 0");
-        await testfInstance.withdrawFunds(recipient, linkBal);
-        let afterBal = await linkTokenInstance.balanceOf(recipient);
-        assert.equal(afterBal - beforeBal, linkBal, "recipient bal should be avaliable link");
+        await testfInstance.withdrawFunds(recipient, portBal);
+        let afterBal = await portTokenInstance.balanceOf(recipient);
+        assert.equal(afterBal - beforeBal, portBal, "recipient bal should be avaliable port");
         let newPayeeForTransmitter = accounts[8];
         await testfInstance.transferPayeeship(transmitter, newPayeeForTransmitter,{from: accounts[4]});
         let payeeshipTransferRequested = (await testfInstance.getPastEvents('PayeeshipTransferRequested'))[0].returnValues;
