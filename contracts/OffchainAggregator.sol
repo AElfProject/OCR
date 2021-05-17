@@ -2,7 +2,7 @@
 pragma solidity ^0.7.1;
 
 import "./AccessControllerInterface.sol";
-import "./AggregatorV2V3Interface.sol";
+import "./AggregatorInterface.sol";
 import "./LinkTokenInterface.sol";
 import "./Owned.sol";
 import "./OffchainAggregatorBilling.sol";
@@ -16,7 +16,7 @@ import "./OffchainAggregatorBilling.sol";
 contract OffchainAggregator is
     Owned,
     OffchainAggregatorBilling,
-    AggregatorV2V3Interface
+    AggregatorInterface
 {
     uint256 private constant maxUint32 = (1 << 32) - 1;
 
