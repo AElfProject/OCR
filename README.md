@@ -113,7 +113,7 @@ report: 由context、observers、observersCount、observation、observationIndex
     * **_rawVs**: 还原signer签名地址的v值。
 
 * **report**
-    * **context**: 全长32个byte，由6个0 byte、16个byte的config digest、8个byte的round id、1个byte的observer count、一个byte的valid byte count构成。
+    * **context**: 全长32个byte，由6个0 byte、16个byte的config digest(setConfig时根据设置的信息hash生成，transmit时的config digest需要与合约中当前的config digest相同)、8个byte的round id、1个byte的observer count、一个byte的valid byte count构成。
     * **observers**: 全长32个byte，记录的是s_oracleObservationsCounts的index，即每一个observer的index，最多记录32个obserer的index，一轮提交中observer的数量记录在context中的observer count。
     * **observersCount**: 全长32个byte，记录的是每一个observer在本轮数据提交中提供数据的个数。为s_oracleObservationsCounts\[index] = count，每一个byte记录一个observer的count，最多记录32个observer的count。
     * **observation**: 全长32个byte，数据观测值，当一轮只查询一个数据时，该observation为该数据的确切值，其中数据的具体长度记录在context的valid byte count中；当一轮查询多个数据时，observation记录的是这些数据生成的MerkleTree root，此时具体的多个数据记录在multipleObservation中。一个数据的最长存储是32个byte。
