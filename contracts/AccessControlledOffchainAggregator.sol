@@ -4,9 +4,6 @@ pragma solidity ^0.7.1;
 import "./OffchainAggregator.sol";
 import "./SimpleReadAccessController.sol";
 
-/**
- * @notice Wrapper of OffchainAggregator which checks read access on Aggregator-interface methods
- */
 contract AccessControlledOffchainAggregator is
     OffchainAggregator,
     SimpleReadAccessController
@@ -37,11 +34,6 @@ contract AccessControlledOffchainAggregator is
         )
     {}
 
-    /*
-     * v2 Aggregator interface
-     */
-
-    /// @inheritdoc OffchainAggregator
     function latestAnswer()
         public
         view
@@ -58,7 +50,6 @@ contract AccessControlledOffchainAggregator is
         return super.latestAnswer();
     }
 
-    /// @inheritdoc OffchainAggregator
     function latestTimestamp()
         public
         view
@@ -69,7 +60,6 @@ contract AccessControlledOffchainAggregator is
         return super.latestTimestamp();
     }
 
-    /// @inheritdoc OffchainAggregator
     function latestRound()
         public
         view
@@ -80,7 +70,6 @@ contract AccessControlledOffchainAggregator is
         return super.latestRound();
     }
 
-    /// @inheritdoc OffchainAggregator
     function getAnswer(uint256 _roundId)
         public
         view
@@ -141,7 +130,6 @@ contract AccessControlledOffchainAggregator is
         return super.getLatestStringAnswer();
     }
 
-    /// @inheritdoc OffchainAggregator
     function getTimestamp(uint256 _roundId)
         public
         view
@@ -152,11 +140,6 @@ contract AccessControlledOffchainAggregator is
         return super.getTimestamp(_roundId);
     }
 
-    /*
-     * v3 Aggregator interface
-     */
-
-    /// @inheritdoc OffchainAggregator
     function description()
         public
         view
@@ -167,7 +150,6 @@ contract AccessControlledOffchainAggregator is
         return super.description();
     }
 
-    /// @inheritdoc OffchainAggregator
     function getRoundData(uint80 _roundId)
         public
         view
@@ -186,7 +168,6 @@ contract AccessControlledOffchainAggregator is
         return super.getRoundData(_roundId);
     }
 
-    /// @inheritdoc OffchainAggregator
     function latestRoundData()
         public
         view
