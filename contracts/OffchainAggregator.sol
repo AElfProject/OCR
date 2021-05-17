@@ -3,7 +3,7 @@ pragma solidity ^0.7.1;
 
 import "./AccessControllerInterface.sol";
 import "./AggregatorInterface.sol";
-import "./LinkTokenInterface.sol";
+import "./PortTokenInterface.sol";
 import "./Owned.sol";
 import "./OffchainAggregatorBilling.sol";
 
@@ -55,10 +55,10 @@ contract OffchainAggregator is
     /*
      * @param _maximumGasPrice highest gas price for which transmitter will be compensated
      * @param _reasonableGasPrice transmitter will receive reward for gas prices under this value
-     * @param _microLinkPerEth reimbursement per ETH of gas cost, in 1e-6LINK units
-     * @param _linkGweiPerObservation reward to oracle for contributing an observation to a successfully transmitted report, in 1e-9LINK units
-     * @param _linkGweiPerTransmission reward to transmitter of a successful report, in 1e-9LINK units
-     * @param _link address of the LINK contract
+     * @param _microPortPerEth reimbursement per ETH of gas cost, in 1e-6PORT units
+     * @param _portGweiPerObservation reward to oracle for contributing an observation to a successfully transmitted report, in 1e-9PORT units
+     * @param _portGweiPerTransmission reward to transmitter of a successful report, in 1e-9PORT units
+     * @param _port address of the PORT contract
      * @param _billingAccessController access controller for billing admin functions
      * @param _requesterAccessController access controller for requesting new rounds
      * @param _decimals answers are stored in fixed-point format, with this many digits of precision
@@ -67,10 +67,10 @@ contract OffchainAggregator is
     constructor(
         uint32 _maximumGasPrice,
         uint32 _reasonableGasPrice,
-        uint32 _microLinkPerEth,
-        uint32 _linkGweiPerObservation,
-        uint32 _linkGweiPerTransmission,
-        address _link,
+        uint32 _microPortPerEth,
+        uint32 _portGweiPerObservation,
+        uint32 _portGweiPerTransmission,
+        address _port,
         AccessControllerInterface _billingAccessController,
         AccessControllerInterface _requesterAccessController,
         uint8 _decimals,
@@ -79,10 +79,10 @@ contract OffchainAggregator is
         OffchainAggregatorBilling(
             _maximumGasPrice,
             _reasonableGasPrice,
-            _microLinkPerEth,
-            _linkGweiPerObservation,
-            _linkGweiPerTransmission,
-            _link,
+            _microPortPerEth,
+            _portGweiPerObservation,
+            _portGweiPerTransmission,
+            _port,
             _billingAccessController
         )
     {

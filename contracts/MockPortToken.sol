@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.1;
 
-import "./LinkTokenInterface.sol";
+import "./PortTokenInterface.sol";
 
-contract MockLinkToken is LinkTokenInterface {
-    string public _name = "Wrapped LINK";
-    string public _symbol = "LINK";
+contract MockPortToken is PortTokenInterface {
+    string public _name = "Wrapped PORT";
+    string public _symbol = "PORT";
     uint8 public _decimals = 18;
 
     event Approval(address indexed src, address indexed guy, uint256 wad);
