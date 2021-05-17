@@ -5,141 +5,44 @@ import "./AccessControllerInterface.sol";
 import "./PortTokenInterface.sol";
 import "./Owned.sol";
 
-/**
- * @notice tracks administration of oracle-reward and gas-reimbursement parameters.
-
- * @dev
- * If you read or change this, be sure to read or adjust the comments. They
- * track the units of the values under consideration, and are crucial to
- * the readability of the operations it specifies.
-
- * @notice
- * Trust Model:
-
- * Nothing in this contract prevents a billing admin from setting insane
- * values for the billing parameters in setBilling. Oracles
- * participating in this contract should regularly check that the
- * parameters make sense. Similarly, the outstanding obligations of this
- * contract to the oracles can exceed the funds held by the contract.
- * Oracles participating in this contract should regularly check that it
- * holds sufficient funds and stop interacting with it if funding runs
- * out.
-
- * This still leaves oracles with some risk due to TOCTOU issues.
- * However, since the sums involved are pretty small (Ethereum
- * transactions aren't that expensive in the end) and an oracle would
- * likely stop participating in a contract it repeatedly lost money on,
- * this risk is deemed acceptable. Oracles should also regularly
- * withdraw any funds in the contract to prevent issues where the
- * contract becomes underfunded at a later time, and different oracles
- * are competing for the left-over funds.
-
- * Finally, note that any change to the set of oracles or to the billing
- * parameters will trigger payout of all oracles first (using the old
- * parameters), a billing admin cannot take away funds that are already
- * marked for payment.
-*/
 contract OffchainAggregatorBilling is Owned {
-
-  // Maximum number of oracles the offchain reporting protocol is designed for
   uint256 constant internal maxNumOracles = 31;
 
-  // Parameters for oracle payments
   struct Billing {
-
-    // Highest compensated gas price, in ETH-gwei uints
     uint32 maximumGasPrice;
-
-    // If gas price is less (in ETH-gwei units), transmitter gets half the savings
     uint32 reasonableGasPrice;
-
-    // Pay transmitter back this much PORT per unit eth spent on gas
-    // (1e-6PORT/ETH units)
     uint32 microPortPerEth;
-
-    // Fixed PORT reward for each observer, in PORT-gwei units
     uint32 portGweiPerObservation;
-
-    // Fixed reward for transmitter, in portGweiPerObservation units
     uint32 portGweiPerTransmission;
   }
   Billing internal s_billing;
-
-  /**
-  * @return PORT token contract used for billing
-  */
   PortTokenInterface immutable public PORT;
-
   AccessControllerInterface internal s_billingAccessController;
-
-  // ith element is number of observation rewards due to ith process, plus one.
-  // This is expected to saturate after an oracle has submitted 65,535
-  // observations, or about 65535/(3*24*20) = 45 days, given a transmission
-  // every 3 minutes.
-  //
-  // This is always one greater than the actual value, so that when the value is
-  // reset to zero, we don't end up with a zero value in storage (which would
-  // result in a higher gas cost, the next time the value is incremented.)
-  // Calculations using this variable need to take that offset into account.
   uint16[maxNumOracles] internal s_oracleObservationsCounts;
-
-  // Addresses at which oracles want to receive payments, by transmitter address
-  mapping (address /* transmitter */ => address /* payment address */)
+  mapping (address => address)
     internal
     s_payees;
 
-  // Payee addresses which must be approved by the owner
-  mapping (address /* transmitter */ => address /* payment address */)
+  mapping (address => address)
     internal
     s_proposedPayees;
-
-  // PORT-wei-denominated reimbursements for gas used by transmitters.
-  //
-  // This is always one greater than the actual value, so that when the value is
-  // reset to zero, we don't end up with a zero value in storage (which would
-  // result in a higher gas cost, the next time the value is incremented.)
-  // Calculations using this variable need to take that offset into account.
-  //
-  // Argument for overflow safety:
-  // We have the following maximum intermediate values:
-  // - 2**40 additions to this variable (epochAndRound is a uint40)
-  // - 2**32 gas price in ethgwei/gas
-  // - 1e9 ethwei/ethgwei
-  // - 2**32 gas since the block gas limit is at ~20 million
-  // - 2**32 (microport/eth)
-  // And we have 2**40 * 2**32 * 1e9 * 2**32 * 2**32 < 2**166
-  // (we also divide in some places, but that only makes the value smaller)
-  // We can thus safely use uint256 intermediate values for the computation
-  // updating this variable.
+  
   uint256[maxNumOracles] internal s_gasReimbursementsPortWei;
-
-  // Used for s_oracles[a].role, where a is an address, to track the purpose
-  // of the address, or to indicate that the address is unset.
   enum Role {
-    // No oracle role has been set for address a
     Unset,
-    // Signing address for the s_oracles[a].index'th oracle. I.e., report
-    // signatures from this oracle should ecrecover back to address a.
     Signer,
-    // Transmission address for the s_oracles[a].index'th oracle. I.e., if a
-    // report is received by OffchainAggregator.transmit in which msg.sender is
-    // a, it is attributed to the s_oracles[a].index'th oracle.
     Transmitter
   }
 
   struct Oracle {
-    uint8 index; // Index of oracle in s_signers/s_transmitters
-    Role role;   // Role of the address which mapped to this struct
+    uint8 index;
+    Role role;
   }
 
-  mapping (address /* signer OR transmitter address */ => Oracle)
+  mapping (address => Oracle)
     internal s_oracles;
 
-  // s_signers contains the signing address of each oracle
   address[] internal s_signers;
-
-  // s_transmitters contains the transmission address of each oracle,
-  // i.e. the address the oracle actually sends transactions to the contract from
   address[] internal s_transmitters;
 
   uint256 constant private  maxUint16 = (1 << 16) - 1;
@@ -159,8 +62,8 @@ contract OffchainAggregatorBilling is Owned {
       _portGweiPerObservation, _portGweiPerTransmission);
     setBillingAccessControllerInternal(_billingAccessController);
     PORT = PortTokenInterface(_port);
-    uint16[maxNumOracles] memory counts; // See s_oracleObservationsCounts docstring
-    uint256[maxNumOracles] memory gas; // see s_gasReimbursementsPortWei docstring
+    uint16[maxNumOracles] memory counts;
+    uint256[maxNumOracles] memory gas;
     for (uint8 i = 0; i < maxNumOracles; i++) {
       counts[i] = 1;
       gas[i] = 1;
@@ -170,14 +73,6 @@ contract OffchainAggregatorBilling is Owned {
 
   }
 
-  /**
-   * @notice emitted when billing parameters are set
-   * @param maximumGasPrice highest gas price for which transmitter will be compensated
-   * @param reasonableGasPrice transmitter will receive reward for gas prices under this value
-   * @param microPortPerEth reimbursement per ETH of gas cost, in 1e-6PORT units
-   * @param portGweiPerObservation reward to oracle for contributing an observation to a successfully transmitted report, in 1e-9PORT units
-   * @param portGweiPerTransmission reward to transmitter of a successful report, in 1e-9PORT units
-   */
   event BillingSet(
     uint32 maximumGasPrice,
     uint32 reasonableGasPrice,
@@ -201,15 +96,6 @@ contract OffchainAggregatorBilling is Owned {
       _portGweiPerObservation, _portGweiPerTransmission);
   }
 
-  /**
-   * @notice sets billing parameters
-   * @param _maximumGasPrice highest gas price for which transmitter will be compensated
-   * @param _reasonableGasPrice transmitter will receive reward for gas prices under this value
-   * @param _microPortPerEth reimbursement per ETH of gas cost, in 1e-6PORT units
-   * @param _portGweiPerObservation reward to oracle for contributing an observation to a successfully transmitted report, in 1e-9PORT units
-   * @param _portGweiPerTransmission reward to transmitter of a successful report, in 1e-9PORT units
-   * @dev access control provided by billingAccessController
-   */
   function setBilling(
     uint32 _maximumGasPrice,
     uint32 _reasonableGasPrice,
@@ -227,14 +113,6 @@ contract OffchainAggregatorBilling is Owned {
       _portGweiPerObservation, _portGweiPerTransmission);
   }
 
-  /**
-   * @notice gets billing parameters
-   * @param maximumGasPrice highest gas price for which transmitter will be compensated
-   * @param reasonableGasPrice transmitter will receive reward for gas prices under this value
-   * @param microPortPerEth reimbursement per ETH of gas cost, in 1e-6PORT units
-   * @param portGweiPerObservation reward to oracle for contributing an observation to a successfully transmitted report, in 1e-9PORT units
-   * @param portGweiPerTransmission reward to transmitter of a successful report, in 1e-9PORT units
-   */
   function getBilling()
     external
     view
@@ -256,11 +134,6 @@ contract OffchainAggregatorBilling is Owned {
     );
   }
 
-  /**
-   * @notice emitted when a new access-control contract is set
-   * @param old the address prior to the current setting
-   * @param current the address of the new access-control contract
-   */
   event BillingAccessControllerSet(AccessControllerInterface old, AccessControllerInterface current);
 
   function setBillingAccessControllerInternal(AccessControllerInterface _billingAccessController)
@@ -276,11 +149,6 @@ contract OffchainAggregatorBilling is Owned {
     }
   }
 
-  /**
-   * @notice sets billingAccessController
-   * @param _billingAccessController new billingAccessController contract address
-   * @dev only owner can call this
-   */
   function setBillingAccessController(AccessControllerInterface _billingAccessController)
     external
     onlyOwner
@@ -288,10 +156,6 @@ contract OffchainAggregatorBilling is Owned {
     setBillingAccessControllerInternal(_billingAccessController);
   }
 
-  /**
-   * @notice gets billingAccessController
-   * @return address of billingAccessController contract
-   */
   function billingAccessController()
     external
     view
@@ -300,11 +164,6 @@ contract OffchainAggregatorBilling is Owned {
     return s_billingAccessController;
   }
 
-  /**
-   * @notice withdraws an oracle's payment from the contract
-   * @param _transmitter the transmitter address of the oracle
-   * @dev must be called by oracle's payee address
-   */
   function withdrawPayment(address _transmitter)
     external
   {
@@ -312,10 +171,6 @@ contract OffchainAggregatorBilling is Owned {
     payOracle(_transmitter);
   }
 
-  /**
-   * @notice query an oracle's payment amount
-   * @param _transmitter the transmitter address of the oracle
-   */
   function owedPayment(address _transmitter)
     public
     view
@@ -332,15 +187,8 @@ contract OffchainAggregatorBilling is Owned {
     return portWeiAmount;
   }
 
-  /**
-   * @notice emitted when an oracle has been paid PORT
-   * @param transmitter address from which the oracle sends reports to the transmit method
-   * @param payee address to which the payment is sent
-   * @param amount amount of PORT sent
-   */
   event OraclePaid(address transmitter, address payee, uint256 amount);
 
-  // payOracle pays out _transmitter's balance to the corresponding payee, and zeros it out
   function payOracle(address _transmitter)
     internal
   {
@@ -348,19 +196,13 @@ contract OffchainAggregatorBilling is Owned {
     uint256 portWeiAmount = owedPayment(_transmitter);
     if (portWeiAmount > 0) {
       address payee = s_payees[_transmitter];
-      // Poses no re-entrancy issues, because PORT.transfer does not yield
-      // control flow.
       require(PORT.transfer(payee, portWeiAmount), "insufficient funds");
-      s_oracleObservationsCounts[oracle.index] = 1; // "zero" the counts. see var's docstring
-      s_gasReimbursementsPortWei[oracle.index] = 1; // "zero" the counts. see var's docstring
+      s_oracleObservationsCounts[oracle.index] = 1;
+      s_gasReimbursementsPortWei[oracle.index] = 1;
       emit OraclePaid(_transmitter, payee, portWeiAmount);
     }
   }
 
-  // payOracles pays out all transmitters, and zeros out their balances.
-  //
-  // It's much more gas-efficient to do this as a single operation, to avoid
-  // hitting storage too much.
   function payOracles()
     internal
   {
@@ -376,15 +218,12 @@ contract OffchainAggregatorBilling is Owned {
         obsCount * uint256(billing.portGweiPerObservation) * (1 gwei) + reimbursementAmountPortWei;
       if (portWeiAmount > 0) {
           address payee = s_payees[transmitters[transmitteridx]];
-          // Poses no re-entrancy issues, because PORT.transfer does not yield
-          // control flow.
           require(PORT.transfer(payee, portWeiAmount), "insufficient funds");
-          observationsCounts[transmitteridx] = 1;       // "zero" the counts.
-          gasReimbursementsPortWei[transmitteridx] = 1; // "zero" the counts.
+          observationsCounts[transmitteridx] = 1;
+          gasReimbursementsPortWei[transmitteridx] = 1;
           emit OraclePaid(transmitters[transmitteridx], payee, portWeiAmount);
         }
     }
-    // "Zero" the accounting storage variables
     s_oracleObservationsCounts = observationsCounts;
     s_gasReimbursementsPortWei = gasReimbursementsPortWei;
   }
@@ -398,80 +237,34 @@ contract OffchainAggregatorBilling is Owned {
     pure
     returns (uint16[maxNumOracles] memory)
   {
-    // reward each observer-participant with the observer reward
     for (uint obsIdx = 0; obsIdx < observers.length; obsIdx++) {
       uint8 observer = uint8(observers[obsIdx]);
       observations[observer] = saturatingAddUint16(observations[observer], uint8(observersCount[obsIdx]));
     }
     return observations;
   }
-
-  // This value needs to change if maxNumOracles is increased, or the accounting
-  // calculations at the bottom of reimburseAndRewardOracles change.
-  //
-  // To recalculate it, run the profiler as described in
-  // ../../profile/README.md, and add up the gas-usage values reported for the
-  // lines in reimburseAndRewardOracles following the "gasLeft = gasleft()"
-  // line. E.g., you will see output like this:
-  //
-  //      7        uint256 gasLeft = gasleft();
-  //     29        uint256 gasCostEthWei = transmitterGasCostEthWei(
-  //      9          uint256(initialGas),
-  //      3          gasPrice,
-  //      3          callDataGasCost,
-  //      3          gasLeft
-  //      .
-  //      .
-  //      .
-  //     59        uint256 gasCostPortWei = (gasCostEthWei * billing.microPortPerEth)/ 1e6;
-  //      .
-  //      .
-  //      .
-  //   5047        s_gasReimbursementsPortWei[txOracle.index] =
-  //    856          s_gasReimbursementsPortWei[txOracle.index] + gasCostPortWei +
-  //     26          uint256(billing.portGweiPerTransmission) * (1 gwei);
-  //
-  // If those were the only lines to be accounted for, you would add up
-  // 29+9+3+3+3+59+5047+856+26=6035.
   uint256 internal constant accountingGasCost = 6035;
 
-  // Uncomment the following declaration to compute the remaining gas cost after
-  // above gasleft(). (This must exist in a base class to OffchainAggregator, so
-  // it can't go in TestOffchainAggregator.)
-  //
-  // uint256 public gasUsedInAccounting;
-
-  // Gas price at which the transmitter should be reimbursed, in ETH-gwei/gas
-  function impliedGasPrice(     // tx gas fee = txGasPrice + (reasonableGasPrice - txGasPrice) / 2   ,与最大的fee做比较
-    uint256 txGasPrice,         // ETH-gwei/gas units
-    uint256 reasonableGasPrice, // ETH-gwei/gas units       
-    uint256 maximumGasPrice     // ETH-gwei/gas units
+  function impliedGasPrice(
+    uint256 txGasPrice,
+    uint256 reasonableGasPrice,   
+    uint256 maximumGasPrice
   )
     internal
     pure
     returns (uint256)
   {
-    // Reward the transmitter for choosing an efficient gas price: if they manage
-    // to come in lower than considered reasonable, give them half the savings.
-    //
-    // The following calculations are all in units of gwei/gas, i.e. 1e-9ETH/gas
     uint256 gasPrice = txGasPrice;
     if (txGasPrice < reasonableGasPrice) {
-      // Give transmitter half the savings for coming in under the reasonable gas price
       gasPrice += (reasonableGasPrice - txGasPrice) / 2;
     }
-    // Don't reimburse a gas price higher than maximumGasPrice
     return min(gasPrice, maximumGasPrice);
   }
 
-  // gas reimbursement due the transmitter, in ETH-wei
-  //
-  // If this function is changed, accountingGasCost needs to change, too. See
-  // its docstring
   function transmitterGasCostEthWei(
     uint256 initialGas,
-    uint256 gasPrice, // ETH-gwei/gas units
-    uint256 callDataCost, // gas units
+    uint256 gasPrice,
+    uint256 callDataCost,
     uint256 gasLeft
   )
     internal
@@ -479,21 +272,14 @@ contract OffchainAggregatorBilling is Owned {
     returns (uint128 gasCostEthWei)
   {
     require(initialGas >= gasLeft, "gasLeft cannot exceed initialGas");
-    uint256 gasUsed = // gas units
-      initialGas - gasLeft + // observed gas usage
-      callDataCost + accountingGasCost; // estimated gas usage
-    // gasUsed is in gas units, gasPrice is in ETH-gwei/gas units; convert to ETH-wei
+    uint256 gasUsed =
+      initialGas - gasLeft +
+      callDataCost + accountingGasCost;
     uint256 fullGasCostEthWei = gasUsed * gasPrice * (1 gwei);
-    assert(fullGasCostEthWei < maxUint128); // the entire ETH supply fits in a uint128...
+    assert(fullGasCostEthWei < maxUint128);
     return uint128(fullGasCostEthWei);
   }
 
-  /**
-   * @notice withdraw any available funds left in the contract, up to _amount, after accounting for the funds due to participants in past reports
-   * @param _recipient address to send funds to
-   * @param _amount maximum amount to withdraw, denominated in PORT-wei.
-   * @dev access control provided by billingAccessController
-   */
   function withdrawFunds(address _recipient, uint256 _amount)
     external
   {
@@ -505,58 +291,35 @@ contract OffchainAggregatorBilling is Owned {
     require(PORT.transfer(_recipient, min(portBalance - portDue, _amount)), "insufficient funds");
   }
 
-  // Total PORT due to participants in past reports.
   function totalPORTDue()
     internal
     view
     returns (uint256 portDue)
   {
-    // Argument for overflow safety: We do all computations in
-    // uint256s. The inputs to portDue are:
-    // - the <= 31 observation rewards each of which has less than
-    //   64 bits (32 bits for billing.portGweiPerObservation, 32 bits
-    //   for wei/gwei conversion). Hence 69 bits are sufficient for this part.
-    // - the <= 31 gas reimbursements, each of which consists of at most 166
-    //   bits (see s_gasReimbursementsPortWei docstring). Hence 171 bits are
-    //   sufficient for this part
-    // In total, 172 bits are enough.
     uint16[maxNumOracles] memory observationCounts = s_oracleObservationsCounts;
     for (uint i = 0; i < maxNumOracles; i++) {
-      portDue += observationCounts[i] - 1; // Stored value is one greater than actual value
+      portDue += observationCounts[i] - 1;
     }
     Billing memory billing = s_billing;
-    // Convert portGweiPerObservation to uint256, or this overflows!
     portDue *= uint256(billing.portGweiPerObservation) * (1 gwei);
     address[] memory transmitters = s_transmitters;
     uint256[maxNumOracles] memory gasReimbursementsPortWei =
       s_gasReimbursementsPortWei;
     for (uint i = 0; i < transmitters.length; i++) {
-      portDue += uint256(gasReimbursementsPortWei[i]-1); // Stored value is one greater than actual value
+      portDue += uint256(gasReimbursementsPortWei[i]-1);
     }
   }
 
-  /**
-   * @notice allows oracles to check that sufficient PORT balance is available
-   * @return availableBalance PORT available on this contract, after accounting for outstanding obligations. can become negative
-   */
   function portAvailableForPayment()
     external
     view
     returns (int256 availableBalance)
   {
-    // there are at most one billion PORT, so this cast is safe
     int256 balance = int256(PORT.balanceOf(address(this)));
-    // according to the argument in the definition of totalPORTDue,
-    // totalPORTDue is never greater than 2**172, so this cast is safe
     int256 due = int256(totalPORTDue());
-    // safe from overflow according to above sizes
     return int256(balance) - int256(due);
   }
 
-  /**
-   * @notice number of observations oracle is due to be reimbursed for
-   * @param _signerOrTransmitter address used by oracle for signing or transmitting reports
-   */
   function oracleObservationCount(address _signerOrTransmitter)
     external
     view
@@ -576,25 +339,18 @@ contract OffchainAggregatorBilling is Owned {
     internal
   {
     Oracle memory txOracle = s_oracles[msg.sender];
-    Billing memory billing = s_billing;            // billing的设置
-    // Reward oracles for providing observations. Oracles are not rewarded
-    // for providing signatures, because signing is essentially free.
+    Billing memory billing = s_billing;
     s_oracleObservationsCounts =
-      oracleRewards(observers, observerCount, s_oracleObservationsCounts);      // 记录，  提供数据的observer count + 1
-    // Reimburse transmitter of the report for gas usage
+      oracleRewards(observers, observerCount, s_oracleObservationsCounts);
     require(txOracle.role == Role.Transmitter,
       "sent by undesignated transmitter"
     );
     uint256 gasPrice = impliedGasPrice(
-      tx.gasprice / (1 gwei), // convert to ETH-gwei units
+      tx.gasprice / (1 gwei),
       billing.reasonableGasPrice,
       billing.maximumGasPrice
     );
-    // The following is only an upper bound, as it ignores the cheaper cost for
-    // 0 bytes. Safe from overflow, because calldata just isn't that long.
     uint256 callDataGasCost = 16 * msg.data.length;
-    // If any changes are made to subsequent calculations, accountingGasCost
-    // needs to change, too.
     uint256 gasLeft = gasleft();
     uint256 gasCostEthWei = transmitterGasCostEthWei(
       uint256(initialGas),
@@ -602,62 +358,24 @@ contract OffchainAggregatorBilling is Owned {
       callDataGasCost,
       gasLeft
     );
-
-    // microPortPerEth is 1e-6PORT/ETH units, gasCostEthWei is 1e-18ETH units
-    // (ETH-wei), product is 1e-24PORT-wei units, dividing by 1e6 gives
-    // 1e-18PORT units, i.e. PORT-wei units
-    // Safe from over/underflow, since all components are non-negative,
-    // gasCostEthWei will always fit into uint128 and microPortPerEth is a
-    // uint32 (128+32 < 256!).
     uint256 gasCostPortWei = (gasCostEthWei * billing.microPortPerEth)/ 1e6;    // 转换为port token
-
-    // Safe from overflow, because gasCostPortWei < 2**160 and
-    // billing.portGweiPerTransmission * (1 gwei) < 2**64 and we increment
-    // s_gasReimbursementsPortWei[txOracle.index] at most 2**40 times.
     s_gasReimbursementsPortWei[txOracle.index] =
       s_gasReimbursementsPortWei[txOracle.index] + gasCostPortWei +
-      uint256(billing.portGweiPerTransmission) * (1 gwei); // convert from portGwei to portWei
-
-    // Uncomment next line to compute the remaining gas cost after above gasleft().
-    // See OffchainAggregatorBilling.accountingGasCost docstring for more information.
-    //
-    // gasUsedInAccounting = gasLeft - gasleft();
+      uint256(billing.portGweiPerTransmission) * (1 gwei);
   }
 
-  /*
-   * Payee management
-   */
-
-  /**
-   * @notice emitted when a transfer of an oracle's payee address has been initiated
-   * @param transmitter address from which the oracle sends reports to the transmit method
-   * @param current the payeee address for the oracle, prior to this setting
-   * @param proposed the proposed new payee address for the oracle
-   */
   event PayeeshipTransferRequested(
     address indexed transmitter,
     address indexed current,
     address indexed proposed
   );
 
-  /**
-   * @notice emitted when a transfer of an oracle's payee address has been completed
-   * @param transmitter address from which the oracle sends reports to the transmit method
-   * @param current the payeee address for the oracle, prior to this setting
-   */
   event PayeeshipTransferred(
     address indexed transmitter,
     address indexed previous,
     address indexed current
   );
 
-  /**
-   * @notice sets the payees for transmitting addresses
-   * @param _transmitters addresses oracles use to transmit the reports
-   * @param _payees addresses of payees corresponding to list of transmitters
-   * @dev must be called by owner
-   * @dev cannot be used to change payee addresses, only to initially populate them
-   */
   function setPayees(
     address[] calldata _transmitters,
     address[] calldata _payees
@@ -681,12 +399,6 @@ contract OffchainAggregatorBilling is Owned {
     }
   }
 
-  /**
-   * @notice first step of payeeship transfer (safe transfer pattern)
-   * @param _transmitter transmitter address of oracle whose payee is changing
-   * @param _proposed new payee address
-   * @dev can only be called by payee address
-   */
   function transferPayeeship(
     address _transmitter,
     address _proposed
@@ -704,11 +416,6 @@ contract OffchainAggregatorBilling is Owned {
       }
   }
 
-  /**
-   * @notice second step of payeeship transfer (safe transfer pattern)
-   * @param _transmitter transmitter address of oracle whose payee is changing
-   * @dev can only be called by proposed new payee address
-   */
   function acceptPayeeship(
     address _transmitter
   )
@@ -722,10 +429,6 @@ contract OffchainAggregatorBilling is Owned {
 
     emit PayeeshipTransferred(_transmitter, currentPayee, msg.sender);
   }
-
-  /*
-   * Helper functions
-   */
 
   function saturatingAddUint16(uint16 _x, uint16 _y)
     internal
