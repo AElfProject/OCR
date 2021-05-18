@@ -15,31 +15,7 @@ namespace ReportGenerator
         public string V { get; set; }
     }
     public class SignService
-    {
-        public string GenerateAddressOnEthereum(byte[] publicKey)
-        {
-            var publicKeyStr = publicKey.ToHex();
-            if (publicKeyStr.StartsWith("0x"))
-            {
-                publicKeyStr = publicKeyStr.Substring(2, publicKey.Length - 2);
-            }
-            publicKeyStr = publicKeyStr.Substring(2, publicKey.Length - 2);
-            publicKeyStr = GetKeccak256(publicKeyStr);
-            var address = "0x" + publicKeyStr.Substring(publicKey.Length - 40, 40);
-            return address;
-        }
-        
-        public string GenerateAddressOnEthereum(string publicKey)
-        {
-            if (publicKey.StartsWith("0x"))
-            {
-                publicKey = publicKey.Substring(2, publicKey.Length - 2);
-            }
-            publicKey = publicKey.Substring(2, publicKey.Length - 2);
-            publicKey = GetKeccak256(publicKey);
-            var address = "0x" + publicKey.Substring(publicKey.Length - 40, 40);
-            return address;
-        }
+    {        
         public Signature Sign(string hexMsg, byte[] privateKey)
         {
             var msgHashBytes = ByteStringHelper.FromHexString(GetKeccak256(hexMsg));
