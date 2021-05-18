@@ -18,10 +18,10 @@
  *
  */
 
-// const HDWalletProvider = require("truffle-hdwallet-provider");
-// const dotenv = require('.secret');
-// const process = dotenv.config();
-// var keys = [process.env.kovan_key0, process.env.kovan_key1, process.env.kovan_key2, process.env.kovan_key3];
+const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
+const dotenv = require('dotenv');
+const process = dotenv.config();
+var privateKeys = [process.parsed.kovan_key0, process.parsed.kovan_key1, process.parsed.kovan_key2, process.parsed.kovan_key3];
 
 module.exports = {
   /**
@@ -42,10 +42,12 @@ module.exports = {
     // options below to some value.
     //
     // kovan: {
-    //   provider: new HDWalletProvider(keys, "https://kovan.infura.io/v3/" + process.infura_apikey, 0, 4),
+    //   provider: function(){
+    //     return new HDWalletProvider(privateKeys, "https://kovan.infura.io/v3/" + process.parsed.infura_apikey)
+    //   },
     //   network_id: 42,
-    //   gas: 3012388,
-    //   gasPrice: 30000000000,
+    //   gas: 3012388000,
+    //   gasPrice: 1000000000,
     //   networkCheckTimeout: 10000000
     // }
     // development: {
@@ -103,6 +105,6 @@ module.exports = {
     'truffle-plugin-verify', 'truffle-contract-size'
   ],
   api_keys: {
-    etherscan: process.env.ETHERSCAN_API_KEY
+    etherscan: process.parsed.ETHERSCAN_API_KEY
   }
 };

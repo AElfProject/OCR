@@ -319,3 +319,4 @@ tools
 ./yarn.lock
 ./package-lock.json
 ./.secret
+./.env
