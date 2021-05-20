@@ -18,10 +18,10 @@
  *
  */
 
-const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
-const dotenv = require('dotenv');
-const process = dotenv.config();
-var privateKeys = [process.parsed.kovan_key0, process.parsed.kovan_key1, process.parsed.kovan_key2, process.parsed.kovan_key3];
+// const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
+// const dotenv = require('dotenv');
+// const process = dotenv.config();
+// var privateKeys = [process.parsed.kovan_key0, process.parsed.kovan_key1, process.parsed.kovan_key2, process.parsed.kovan_key3];
 
 module.exports = {
   /**
@@ -104,7 +104,7 @@ module.exports = {
   plugins: [
     'truffle-plugin-verify', 'truffle-contract-size'
   ],
-  api_keys: {
-    etherscan: process.parsed.ETHERSCAN_API_KEY
-  }
+  // api_keys: {
+  //   etherscan: process.parsed.ETHERSCAN_API_KEY
+  // }
 };
