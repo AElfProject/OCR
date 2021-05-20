@@ -6,7 +6,7 @@ interface AggregatorInterface {
         external
         view
         returns (
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -21,7 +21,7 @@ interface AggregatorInterface {
         external
         view
         returns (
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -29,17 +29,6 @@ interface AggregatorInterface {
         );
 
     function getTimestamp(uint256 roundId) external view returns (uint256);
-
-    event AnswerUpdated(
-        bytes32 indexed current,
-        uint256 indexed roundId,
-        uint256 updatedAt
-    );
-    event NewRound(
-        uint256 indexed roundId,
-        address indexed startedBy,
-        uint256 startedAt
-    );
 
     function decimals() external view returns (uint8);
 
@@ -52,7 +41,7 @@ interface AggregatorInterface {
         view
         returns (
             uint80 roundId,
-            bytes32 answer,
+            bytes32[] memory answer,
             uint8 validBytes,
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
@@ -65,7 +54,7 @@ interface AggregatorInterface {
         view
         returns (
             uint80 roundId,
-            bytes32 answer,
+            bytes32[] memory answer,
             uint8 validBytes,
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
@@ -92,4 +81,17 @@ interface AggregatorInterface {
         external
         view
         returns (uint8[] memory _index, string memory _answerSet);
+    
+    event AnswerUpdated(
+        bytes32[] indexed current,
+        uint256 indexed roundId,
+        uint256 updatedAt,
+        uint8 validBytesLength
+    );
+
+    event NewRound(
+        uint256 indexed roundId,
+        address indexed startedBy,
+        uint256 startedAt
+    );
 }

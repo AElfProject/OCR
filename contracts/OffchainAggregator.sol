@@ -21,7 +21,7 @@ contract OffchainAggregator is
     HotVars internal s_hotVars;
 
     struct Transmission {
-        bytes32 answer;
+        bytes32[] answer;
         uint64 timestamp;
         uint8 validBytes;
         bytes32 multipleObservationsIndex;
@@ -239,7 +239,7 @@ contract OffchainAggregator is
 
     event NewTransmission(
         uint64 indexed roundId,
-        bytes32 answer,
+        bytes32[] answer,
         address transmitter,
         bytes observers,
         bytes32 rawReportContext
@@ -287,7 +287,7 @@ contract OffchainAggregator is
         returns (
             bytes16 configDigest,
             uint64 latestRoundId,
-            bytes32 latestAnswer,
+            bytes32[] memory latestAnswer,
             uint8 validBytes,
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
@@ -371,7 +371,7 @@ contract OffchainAggregator is
                     bytes32,
                     bytes32,
                     bytes32,
-                    bytes32,
+                    bytes32[],
                     bytes32,
                     bytes32,
                     bytes32[]
@@ -488,7 +488,7 @@ contract OffchainAggregator is
         virtual
         override
         returns (
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -519,7 +519,7 @@ contract OffchainAggregator is
         virtual
         override
         returns (
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -549,11 +549,15 @@ contract OffchainAggregator is
                 s_transmissions[uint32(_roundId)];
         uint256 observationCount = transmission.multipleObservations.length;
         bytes32 observation;
+        uint8 observationCount;
+        uint256 observationStartIndex;
         for(uint256 i = 0; i < observationCount; i ++){
             if(_index == uint8(transmission.multipleObservationsIndex[i])){
                 observation = transmission.multipleObservations[i];
                 break;
             }
+            observationStartIndex = observationStartIndex + transmission.multipleObservationsValidBytes[i] / 32;
+
         }
         return bytes32ToString(observation);
     }
@@ -615,7 +619,8 @@ contract OffchainAggregator is
                 s_transmissions[s_hotVars.latestRoundId];
         uint256 observationCount = transmission.multipleObservations.length;
         if(observationCount == 0){
-            return (new uint8[](0), bytes32ToString(transmission.answer));
+            uint8 validBytes = transmission.validBytes;
+            return (new uint8[](0), bytes32ToString(transmission.answer, validBytes));
         }
         _index = new uint8[](observationCount);
         for(uint256 i = 0; i < observationCount; i ++){
@@ -630,14 +635,12 @@ contract OffchainAggregator is
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
-        uint8 i = 0;
-        while(i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
+    function bytes32ToString(bytes32[] memory _bytes32, uint8 _validBytes) public pure returns (string memory) {
+        bytes memory bytesArray = new bytes(_validBytes);
+        for (i = 0; i < _validBytes; i++) {
+            uint256 firstIndex = i / 32;
+            uint256 secondIndex = i % 32;
+            bytesArray[i] = _bytes32[firstIndex][secondIndex];
         }
         return string(bytesArray);
     }
@@ -680,7 +683,7 @@ contract OffchainAggregator is
         override
         returns (
             uint80 roundId,
-            bytes32 answer,
+            bytes32[] memory answer,
             uint8 validBytes,
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,
@@ -708,7 +711,7 @@ contract OffchainAggregator is
         override
         returns (
             uint80 roundId,
-            bytes32 answer,
+            bytes32[] memory answer,
             uint8 validBytes,
             bytes32 multipleObservationsIndex,
             bytes32 multipleObservationsValidBytes,

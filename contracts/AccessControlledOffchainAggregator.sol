@@ -40,7 +40,7 @@ contract AccessControlledOffchainAggregator is
         override
         checkAccess()
         returns (
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -76,7 +76,7 @@ contract AccessControlledOffchainAggregator is
         override
         checkAccess()
         returns (
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -157,7 +157,7 @@ contract AccessControlledOffchainAggregator is
         checkAccess()
         returns (
             uint80,
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
@@ -175,7 +175,7 @@ contract AccessControlledOffchainAggregator is
         checkAccess()
         returns (
             uint80,
-            bytes32,
+            bytes32[] memory,
             uint8,
             bytes32,
             bytes32,
