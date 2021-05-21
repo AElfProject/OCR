@@ -276,7 +276,7 @@ contract OffchainAggregator is
         HotVars hotVars;
         bytes observers;
         bytes observersCount;
-        bytes32 observation;
+        bytes32[] observation;
         bytes vs;
         bytes32 rawReportContext;
     }
@@ -470,7 +470,8 @@ contract OffchainAggregator is
             emit AnswerUpdated(
                 r.observation,
                 r.hotVars.latestRoundId,
-                block.timestamp
+                block.timestamp,
+                uint8(uint256(r.rawReportContext))
             );
         }
         s_hotVars = r.hotVars;
@@ -527,7 +528,7 @@ contract OffchainAggregator is
         )
     {
         if (_roundId > 0xFFFFFFFF) {
-            return (0, 0, 0, 0, new bytes32[](0));
+            return (new bytes32[](0), 0, 0, 0, new bytes32[](0));
         }
         return (
             s_transmissions[uint32(_roundId)].answer,
@@ -548,18 +549,18 @@ contract OffchainAggregator is
         Transmission memory transmission =
                 s_transmissions[uint32(_roundId)];
         uint256 observationCount = transmission.multipleObservations.length;
-        bytes32 observation;
-        uint8 observationCount;
-        uint256 observationStartIndex;
+        uint8 observationLength;
+        uint8 observationStartIndex;
         for(uint256 i = 0; i < observationCount; i ++){
+            uint8 currentObservationLength = uint8(transmission.multipleObservationsValidBytes[i]);
             if(_index == uint8(transmission.multipleObservationsIndex[i])){
-                observation = transmission.multipleObservations[i];
+                observationLength = currentObservationLength;
                 break;
             }
-            observationStartIndex = observationStartIndex + transmission.multipleObservationsValidBytes[i] / 32;
-
+            observationStartIndex = observationStartIndex + getValidArryLength(currentObservationLength);
         }
-        return bytes32ToString(observation);
+        bytes32[] memory targetAnswer = getObservation(observationStartIndex, observationLength, transmission.multipleObservations);
+        return bytes32ToString(targetAnswer, observationLength);
     }
 
     function getLatestStringAnswerByIndex(uint8 _index)
@@ -569,17 +570,7 @@ contract OffchainAggregator is
         view
         returns (string memory)
     {
-        Transmission memory transmission =
-                s_transmissions[s_hotVars.latestRoundId];
-        uint256 observationCount = transmission.multipleObservations.length;
-        bytes32 observation;
-        for(uint256 i = 0; i < observationCount; i ++){
-            if(_index == uint8(transmission.multipleObservationsIndex[i])){
-                observation = transmission.multipleObservations[i];
-                break;
-            }
-        }
-        return bytes32ToString(observation);
+        return getStringAnswerByIndex(s_hotVars.latestRoundId, _index);
     }
 
     function getStringAnswer(uint256 _roundId)
@@ -593,18 +584,22 @@ contract OffchainAggregator is
                 s_transmissions[uint32(_roundId)];
         uint256 observationCount = transmission.multipleObservations.length;
         if(observationCount == 0){
-            return (new uint8[](0), bytes32ToString(transmission.answer));
+            return (new uint8[](0), bytes32ToString(transmission.answer, transmission.validBytes));
         }
         _index = new uint8[](observationCount);
+        uint8 currentStartIndex;
         for(uint256 i = 0; i < observationCount; i ++){
             _index[i] = uint8(transmission.multipleObservationsIndex[i]);
-            string memory observation = bytes32ToString(transmission.multipleObservations[i]);
+            uint8 currentObservationLength = uint8(transmission.multipleObservationsValidBytes[i]);
+            bytes32[] memory targetAnswer = getObservation(currentStartIndex, currentObservationLength, transmission.multipleObservations);
+            string memory observation = bytes32ToString(targetAnswer, currentObservationLength);
             if(i == 0){
                 _answerSet = observation;
             }
             else{
                 _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
             }
+            currentStartIndex = currentStartIndex + getValidArryLength(currentObservationLength);
         }
     }
 
@@ -615,29 +610,12 @@ contract OffchainAggregator is
         view
         returns (uint8[] memory _index, string memory _answerSet)
     {
-        Transmission memory transmission =
-                s_transmissions[s_hotVars.latestRoundId];
-        uint256 observationCount = transmission.multipleObservations.length;
-        if(observationCount == 0){
-            uint8 validBytes = transmission.validBytes;
-            return (new uint8[](0), bytes32ToString(transmission.answer, validBytes));
-        }
-        _index = new uint8[](observationCount);
-        for(uint256 i = 0; i < observationCount; i ++){
-            _index[i] = uint8(transmission.multipleObservationsIndex[i]);
-            string memory observation = bytes32ToString(transmission.multipleObservations[i]);
-            if(i == 0){
-                _answerSet = observation;
-            }
-            else{
-                _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
-            }
-        }
+        return getStringAnswer(s_hotVars.latestRoundId);
     }
 
-    function bytes32ToString(bytes32[] memory _bytes32, uint8 _validBytes) public pure returns (string memory) {
+    function bytes32ToString(bytes32[] memory _bytes32, uint8 _validBytes) public view returns (string memory) {
         bytes memory bytesArray = new bytes(_validBytes);
-        for (i = 0; i < _validBytes; i++) {
+        for (uint256 i = 0; i < _validBytes; i++) {
             uint256 firstIndex = i / 32;
             uint256 secondIndex = i % 32;
             bytesArray[i] = _bytes32[firstIndex][secondIndex];
@@ -730,5 +708,22 @@ contract OffchainAggregator is
             transmission.multipleObservations,
             transmission.timestamp
         );
+    }
+
+    function getValidArryLength(uint8 _bytesLength) private pure returns(uint8){
+        if(_bytesLength == 0)
+            return 1;
+        return (_bytesLength - 1) / 32 + 1;
+    }
+
+    function getObservation(uint8 _startIndex, uint8 _length, bytes32[] memory _observations) private pure returns(bytes32[] memory){
+        uint8 observationLength = getValidArryLength(_length);
+        bytes32[] memory targetObservation = new bytes32[](observationLength);
+        uint256 startIndex = 0;
+        for(uint8 i = _startIndex; i < _startIndex + observationLength; i ++){
+            targetObservation[startIndex] = _observations[i];
+            startIndex ++;
+        }
+        return targetObservation;
     }
 }
