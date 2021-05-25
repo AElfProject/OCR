@@ -558,7 +558,11 @@ contract OffchainAggregator is
                 break;
             }
             observationStartIndex = observationStartIndex + getValidArryLength(currentObservationLength);
+            if(observationStartIndex >= observationCount){
+                break;
+            }
         }
+        require(observationLength > 0, "index does not exist");
         bytes32[] memory targetAnswer = getObservation(observationStartIndex, observationLength, transmission.multipleObservations);
         return bytes32ToString(targetAnswer, observationLength);
     }

@@ -114,6 +114,12 @@ contract('master chef', (accounts) => {
         assert.equal(index2Ob, "junaeliovea", "index 1 answer wrong");
         let index3Ob = await testInstance.getStringAnswerByIndex(11, 2);
         assert.equal(index3Ob, "12321432.123123", "index 2 answer wrong");
+        try{
+            await testInstance.getStringAnswerByIndex(11, 3);
+        }
+        catch(err){
+            assert.include(err.message, "revert", "The error message should contain 'index does not exist'");
+        }    
         let latestRound = await testInstance.latestRound();
         assert.equal(latestRound, 11, "wrong round id");
 
