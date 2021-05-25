@@ -604,6 +604,9 @@ contract OffchainAggregator is
                 _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
             }
             currentStartIndex = currentStartIndex + getValidArryLength(currentObservationLength);
+            if(currentStartIndex >= observationCount){
+                break;
+            }
         }
     }
 

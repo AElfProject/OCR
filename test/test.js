@@ -132,7 +132,7 @@ contract('MyTest', (accounts) => {
     let ob2 = "0x302e333933373838363838373838323737330000000000000000000000000000";
     let ob3 = "0x343030332e323038333436343031373139363932350000000000000000000000";
     concateString = await testInstance.concatBytes(ob1, ob2, ob3);
-    console.log(concateString);
+    //console.log(concateString);
   });
 });
 
