@@ -382,4 +382,14 @@ contract Test {
         retStr = string(abi.encodePacked(retStr, ";", c));
         ret = bytes(retStr);
     }
+
+    function getIndexAndTringAnswer(bytes32 a, bytes32 b, bytes32 c) public view returns (uint8[] memory index, string memory ret){
+        ret = string(abi.encodePacked(a));
+        ret = string(abi.encodePacked(ret, ';', b));
+        ret = string(abi.encodePacked(ret, ";", c));
+        index = new uint8[](3);
+        index[0] = 0;
+        index[1] = 1;
+        index[2] = 2;
+    }
 }

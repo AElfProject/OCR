@@ -201,6 +201,8 @@ contract('master chef', (accounts) => {
         assert.equal(latestAnswer['4'][11], "0x6164736461646164640000000000000000000000000000000000000000000000", "invalid observation at index 11");
         let index2Ob = await testInstance.getStringAnswerByIndex(12, 3);
         assert.equal(index2Ob, "c42edefc75871e4ce2146fcda67d03dda05cc26fdf93b17b55f42c1eadfdc322c42edefc75871e4ce2146fcda67d03dda05cc26fdf93b17b55f42c1eadfdc322adsdadadd", "index 3 answer wrong");
+        let stringAnswer = await testInstance.getLatestStringAnswer();
+        assert.equal(stringAnswer._index.length, 4, "index length should be 4");
     });
 
     it('configuration test', async () => {

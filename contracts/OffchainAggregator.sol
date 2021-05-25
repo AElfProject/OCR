@@ -590,10 +590,10 @@ contract OffchainAggregator is
         if(observationCount == 0){
             return (new uint8[](0), bytes32ToString(transmission.answer, transmission.validBytes));
         }
-        _index = new uint8[](observationCount);
+       
         uint8 currentStartIndex;
-        for(uint256 i = 0; i < observationCount; i ++){
-            _index[i] = uint8(transmission.multipleObservationsIndex[i]);
+        uint256 i;
+        for(i = 0; i < observationCount; i ++){
             uint8 currentObservationLength = uint8(transmission.multipleObservationsValidBytes[i]);
             bytes32[] memory targetAnswer = getObservation(currentStartIndex, currentObservationLength, transmission.multipleObservations);
             string memory observation = bytes32ToString(targetAnswer, currentObservationLength);
@@ -607,6 +607,11 @@ contract OffchainAggregator is
             if(currentStartIndex >= observationCount){
                 break;
             }
+        }
+        _index = new uint8[](i + 1);
+        bytes32 multipleObservationsIndex = transmission.multipleObservationsIndex;
+        for(uint256 j = 0; j < _index.length; j ++){
+            _index[j] = uint8(multipleObservationsIndex[j]);
         }
     }
 
