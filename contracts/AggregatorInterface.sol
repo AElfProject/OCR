@@ -61,26 +61,6 @@ interface AggregatorInterface {
             bytes32[] memory multipleObservations,
             uint256 updatedAt
         );
-
-    function getStringAnswerByIndex(uint256 _roundId, uint8 _index)
-        external
-        view
-        returns (string memory);
-
-    function getStringAnswer(uint256 _roundId)
-        external
-        view
-        returns (uint8[] memory _index, string memory _answerSet);
-
-    function getLatestStringAnswerByIndex(uint8 _index)
-        external
-        view
-        returns (string memory);
-
-    function getLatestStringAnswer()
-        external
-        view
-        returns (uint8[] memory _index, string memory _answerSet);
     
     event AnswerUpdated(
         bytes32[] indexed current,

@@ -86,50 +86,6 @@ contract AccessControlledOffchainAggregator is
         return super.getAnswer(_roundId);
     }
 
-    function getStringAnswerByIndex(uint256 _roundId, uint8 _index)
-        public
-        view
-        override
-        checkAccess()
-        returns (
-          string memory
-        )
-    {
-        return super.getStringAnswerByIndex(_roundId, _index);
-    }
-
-    function getLatestStringAnswerByIndex(uint8 _index)
-        public
-        view
-        override
-        checkAccess()
-        returns (
-          string memory
-        )
-    {
-        return super.getLatestStringAnswerByIndex(_index);
-    }
-
-    function getStringAnswer(uint256 _roundId)
-        public
-        view
-        override
-        checkAccess()
-        returns (uint8[] memory _index, string memory _answerSet)
-    {
-        return super.getStringAnswer(_roundId);
-    }
-
-    function getLatestStringAnswer()
-        public
-        view
-        override
-        checkAccess()
-        returns (uint8[] memory _index, string memory _answerSet)
-    {
-        return super.getLatestStringAnswer();
-    }
-
     function getTimestamp(uint256 _roundId)
         public
         view

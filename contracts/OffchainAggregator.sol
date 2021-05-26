@@ -539,102 +539,6 @@ contract OffchainAggregator is
         );
     }
 
-    function getStringAnswerByIndex(uint256 _roundId, uint8 _index)
-        public
-        virtual
-        override
-        view
-        returns (string memory)
-    {
-        Transmission memory transmission =
-                s_transmissions[uint32(_roundId)];
-        uint256 observationCount = transmission.multipleObservations.length;
-        uint8 observationLength;
-        uint8 observationStartIndex;
-        for(uint256 i = 0; i < observationCount; i ++){
-            uint8 currentObservationLength = uint8(transmission.multipleObservationsValidBytes[i]);
-            if(_index == uint8(transmission.multipleObservationsIndex[i])){
-                observationLength = currentObservationLength;
-                break;
-            }
-            observationStartIndex = observationStartIndex + getValidArryLength(currentObservationLength);
-            if(observationStartIndex >= observationCount){
-                break;
-            }
-        }
-        require(observationLength > 0, "index does not exist");
-        bytes32[] memory targetAnswer = getObservation(observationStartIndex, observationLength, transmission.multipleObservations);
-        return bytes32ToString(targetAnswer, observationLength);
-    }
-
-    function getLatestStringAnswerByIndex(uint8 _index)
-        public
-        virtual
-        override
-        view
-        returns (string memory)
-    {
-        return getStringAnswerByIndex(s_hotVars.latestRoundId, _index);
-    }
-
-    function getStringAnswer(uint256 _roundId)
-        public
-        virtual
-        override
-        view
-        returns (uint8[] memory _index, string memory _answerSet)
-    {
-        Transmission memory transmission =
-                s_transmissions[uint32(_roundId)];
-        uint256 observationCount = transmission.multipleObservations.length;
-        if(observationCount == 0){
-            return (new uint8[](0), bytes32ToString(transmission.answer, transmission.validBytes));
-        }
-       
-        uint8 currentStartIndex;
-        uint256 i;
-        for(i = 0; i < observationCount; i ++){
-            uint8 currentObservationLength = uint8(transmission.multipleObservationsValidBytes[i]);
-            bytes32[] memory targetAnswer = getObservation(currentStartIndex, currentObservationLength, transmission.multipleObservations);
-            string memory observation = bytes32ToString(targetAnswer, currentObservationLength);
-            if(i == 0){
-                _answerSet = observation;
-            }
-            else{
-                _answerSet = string(abi.encodePacked(_answerSet, ";", observation));
-            }
-            currentStartIndex = currentStartIndex + getValidArryLength(currentObservationLength);
-            if(currentStartIndex >= observationCount){
-                break;
-            }
-        }
-        _index = new uint8[](i + 1);
-        bytes32 multipleObservationsIndex = transmission.multipleObservationsIndex;
-        for(uint256 j = 0; j < _index.length; j ++){
-            _index[j] = uint8(multipleObservationsIndex[j]);
-        }
-    }
-
-    function getLatestStringAnswer()
-        public
-        virtual
-        override
-        view
-        returns (uint8[] memory _index, string memory _answerSet)
-    {
-        return getStringAnswer(s_hotVars.latestRoundId);
-    }
-
-    function bytes32ToString(bytes32[] memory _bytes32, uint8 _validBytes) public view returns (string memory) {
-        bytes memory bytesArray = new bytes(_validBytes);
-        for (uint256 i = 0; i < _validBytes; i++) {
-            uint256 firstIndex = i / 32;
-            uint256 secondIndex = i % 32;
-            bytesArray[i] = _bytes32[firstIndex][secondIndex];
-        }
-        return string(bytesArray);
-    }
-
     function getTimestamp(uint256 _roundId)
         public
         view
@@ -720,22 +624,5 @@ contract OffchainAggregator is
             transmission.multipleObservations,
             transmission.timestamp
         );
-    }
-
-    function getValidArryLength(uint8 _bytesLength) private pure returns(uint8){
-        if(_bytesLength == 0)
-            return 1;
-        return (_bytesLength - 1) / 32 + 1;
-    }
-
-    function getObservation(uint8 _startIndex, uint8 _length, bytes32[] memory _observations) private pure returns(bytes32[] memory){
-        uint8 observationLength = getValidArryLength(_length);
-        bytes32[] memory targetObservation = new bytes32[](observationLength);
-        uint256 startIndex = 0;
-        for(uint8 i = _startIndex; i < _startIndex + observationLength; i ++){
-            targetObservation[startIndex] = _observations[i];
-            startIndex ++;
-        }
-        return targetObservation;
     }
 }

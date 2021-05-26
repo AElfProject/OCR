@@ -42,11 +42,6 @@ contract('master chef', (accounts) => {
         let latestAnswer = await testInstance.latestAnswer();
         assert.equal(latestAnswer['0'][0], "0x6173646173000000000000000000000000000000000000000000000000000000", "wrong latest answer");
         assert.equal(latestAnswer['1'].toString(), 5, "wrong latest answer length");
-        let latestStringAnswer = await testInstance.getLatestStringAnswer();
-        assert.equal(latestStringAnswer['1'], "asdas", "wrong latest string answer");
-        assert.equal(latestAnswer['2'], "0x0000000000000000000000000000000000000000000000000000000000000000", "observations's index should all be 0s");
-        assert.equal(latestAnswer['3'], "0x0000000000000000000000000000000000000000000000000000000000000000", "observations's data valid bytes should all be 0s");
-        assert.equal(latestAnswer['4'].length, 0, "observations should be all 0s");
         let latestRound = await testInstance.latestRound();
         assert.equal(latestRound, 10, "wrong round id");
 
@@ -107,48 +102,7 @@ contract('master chef', (accounts) => {
         assert.equal(latestAnswer['4'].length, 3, "observations's count should be 3");
         assert.equal(latestAnswer['4'][0], "0x7177656f6c657763776a00000000000000000000000000000000000000000000", "invalid observation at index 0");
         assert.equal(latestAnswer['4'][1], "0x6a756e61656c696f766561000000000000000000000000000000000000000000", "invalid observation at index 1");
-        assert.equal(latestAnswer['4'][2], "0x31323332313433322e3132333132330000000000000000000000000000000000", "invalid observation at index 2");
-        let index1Ob = await testInstance.getStringAnswerByIndex(11, 0);
-        assert.equal(index1Ob, "qweolewcwj", "index 0 answer wrong");
-        let index2Ob = await testInstance.getStringAnswerByIndex(11, 1);
-        assert.equal(index2Ob, "junaeliovea", "index 1 answer wrong");
-        let index3Ob = await testInstance.getStringAnswerByIndex(11, 2);
-        assert.equal(index3Ob, "12321432.123123", "index 2 answer wrong");
-        try{
-            await testInstance.getStringAnswerByIndex(11, 3);
-        }
-        catch(err){
-            assert.include(err.message, "revert", "The error message should contain 'index does not exist'");
-        }  
-        
-        let stringAnswer = await testInstance.getLatestStringAnswer();
-        assert.equal(stringAnswer._answerSet, "qweolewcwj;junaeliovea;12321432.123123", "string answer is wrong");
-
-        let stringTransfereBytes = function stringToByte(str) {  
-            var bytes = new Array();  
-            var len, c;  
-            len = str.length;  
-            for(var i = 0; i < len; i++) {  
-                c = str.charCodeAt(i);  
-                if(c >= 0x010000 && c <= 0x10FFFF) {  
-                    bytes.push(((c >> 18) & 0x07) | 0xF0);  
-                    bytes.push(((c >> 12) & 0x3F) | 0x80);  
-                    bytes.push(((c >> 6) & 0x3F) | 0x80);  
-                    bytes.push((c & 0x3F) | 0x80);  
-                } else if(c >= 0x000800 && c <= 0x00FFFF) {  
-                    bytes.push(((c >> 12) & 0x0F) | 0xE0);  
-                    bytes.push(((c >> 6) & 0x3F) | 0x80);  
-                    bytes.push((c & 0x3F) | 0x80);  
-                } else if(c >= 0x000080 && c <= 0x0007FF) {  
-                    bytes.push(((c >> 6) & 0x1F) | 0xC0);  
-                    bytes.push((c & 0x3F) | 0x80);  
-                } else {  
-                    bytes.push(c & 0xFF);  
-                }  
-            }  
-            return bytes;  
-        }
-        let stringBytes = stringTransfereBytes(stringAnswer._answerSet);         
+        assert.equal(latestAnswer['4'][2], "0x31323332313433322e3132333132330000000000000000000000000000000000", "invalid observation at index 2");       
         let latestRound = await testInstance.latestRound();
         assert.equal(latestRound, 11, "wrong round id");
 
@@ -199,10 +153,6 @@ contract('master chef', (accounts) => {
         assert.equal(latestAnswer['4'][9], "0x6334326564656663373538373165346365323134366663646136376430336464", "invalid observation at index 9");
         assert.equal(latestAnswer['4'][10], "0x6130356363323666646639336231376235356634326331656164666463333232", "invalid observation at index 10");
         assert.equal(latestAnswer['4'][11], "0x6164736461646164640000000000000000000000000000000000000000000000", "invalid observation at index 11");
-        let index2Ob = await testInstance.getStringAnswerByIndex(12, 3);
-        assert.equal(index2Ob, "c42edefc75871e4ce2146fcda67d03dda05cc26fdf93b17b55f42c1eadfdc322c42edefc75871e4ce2146fcda67d03dda05cc26fdf93b17b55f42c1eadfdc322adsdadadd", "index 3 answer wrong");
-        let stringAnswer = await testInstance.getLatestStringAnswer();
-        assert.equal(stringAnswer._index.length, 4, "index length should be 4");
     });
 
     it('configuration test', async () => {
