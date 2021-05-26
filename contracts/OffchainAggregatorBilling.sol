@@ -4,8 +4,11 @@ pragma solidity ^0.7.1;
 import "./AccessControllerInterface.sol";
 import "./PortTokenInterface.sol";
 import "./Owned.sol";
+import "../library/SafeMath.sol";
 
 contract OffchainAggregatorBilling is Owned {
+  using SafeMath for uint256;
+
   uint256 constant internal maxNumOracles = 31;
 
   struct Billing {
@@ -65,8 +68,8 @@ contract OffchainAggregatorBilling is Owned {
     uint16[maxNumOracles] memory counts;
     uint256[maxNumOracles] memory gas;
     for (uint8 i = 0; i < maxNumOracles; i++) {
-      counts[i] = 1;
-      gas[i] = 1;
+      counts[i] = 0;
+      gas[i] = 0;
     }
     s_oracleObservationsCounts = counts;
     s_gasReimbursementsPortWei = gas;
@@ -180,10 +183,10 @@ contract OffchainAggregatorBilling is Owned {
     if (oracle.role == Role.Unset) { return 0; }
     Billing memory billing = s_billing;
     uint256 portWeiAmount =
-      uint256(s_oracleObservationsCounts[oracle.index] - 1) *
-      uint256(billing.portGweiPerObservation) *
-      (1 gwei);
-    portWeiAmount += s_gasReimbursementsPortWei[oracle.index] - 1;
+      uint256(s_oracleObservationsCounts[oracle.index])
+      .mul(uint256(billing.portGweiPerObservation))
+      .mul((1 gwei));
+    portWeiAmount = s_gasReimbursementsPortWei[oracle.index].add(portWeiAmount);
     return portWeiAmount;
   }
 
@@ -197,8 +200,8 @@ contract OffchainAggregatorBilling is Owned {
     if (portWeiAmount > 0) {
       address payee = s_payees[_transmitter];
       require(PORT.transfer(payee, portWeiAmount), "insufficient funds");
-      s_oracleObservationsCounts[oracle.index] = 1;
-      s_gasReimbursementsPortWei[oracle.index] = 1;
+      s_oracleObservationsCounts[oracle.index] = 0;
+      s_gasReimbursementsPortWei[oracle.index] = 0;
       emit OraclePaid(_transmitter, payee, portWeiAmount);
     }
   }
@@ -212,15 +215,15 @@ contract OffchainAggregatorBilling is Owned {
       s_gasReimbursementsPortWei;
     address[] memory transmitters = s_transmitters;
     for (uint transmitteridx = 0; transmitteridx < transmitters.length; transmitteridx++) {
-      uint256 reimbursementAmountPortWei = gasReimbursementsPortWei[transmitteridx] - 1;
-      uint256 obsCount = observationsCounts[transmitteridx] - 1;
+      uint256 reimbursementAmountPortWei = gasReimbursementsPortWei[transmitteridx];
+      uint256 obsCount = observationsCounts[transmitteridx];
       uint256 portWeiAmount =
-        obsCount * uint256(billing.portGweiPerObservation) * (1 gwei) + reimbursementAmountPortWei;
+        obsCount.mul(uint256(billing.portGweiPerObservation)).mul(1 gwei).add(reimbursementAmountPortWei);
       if (portWeiAmount > 0) {
           address payee = s_payees[transmitters[transmitteridx]];
           require(PORT.transfer(payee, portWeiAmount), "insufficient funds");
-          observationsCounts[transmitteridx] = 1;
-          gasReimbursementsPortWei[transmitteridx] = 1;
+          observationsCounts[transmitteridx] = 0;
+          gasReimbursementsPortWei[transmitteridx] = 0;
           emit OraclePaid(transmitters[transmitteridx], payee, portWeiAmount);
         }
     }
@@ -256,7 +259,7 @@ contract OffchainAggregatorBilling is Owned {
   {
     uint256 gasPrice = txGasPrice;
     if (txGasPrice < reasonableGasPrice) {
-      gasPrice += (reasonableGasPrice - txGasPrice) / 2;
+      gasPrice = reasonableGasPrice.sub(txGasPrice).div(2).add(gasPrice);
     }
     return min(gasPrice, maximumGasPrice);
   }
@@ -273,9 +276,8 @@ contract OffchainAggregatorBilling is Owned {
   {
     require(initialGas >= gasLeft, "gasLeft cannot exceed initialGas");
     uint256 gasUsed =
-      initialGas - gasLeft +
-      callDataCost + accountingGasCost;
-    uint256 fullGasCostEthWei = gasUsed * gasPrice * (1 gwei);
+      initialGas.sub(gasLeft).add(callDataCost).add(accountingGasCost);
+    uint256 fullGasCostEthWei = gasUsed.mul(gasPrice).mul(1 gwei);
     assert(fullGasCostEthWei < maxUint128);
     return uint128(fullGasCostEthWei);
   }
@@ -288,7 +290,7 @@ contract OffchainAggregatorBilling is Owned {
     uint256 portDue = totalPORTDue();
     uint256 portBalance = PORT.balanceOf(address(this));
     require(portBalance >= portDue, "insufficient balance");
-    require(PORT.transfer(_recipient, min(portBalance - portDue, _amount)), "insufficient funds");
+    require(PORT.transfer(_recipient, min(portBalance.sub(portDue), _amount)), "insufficient funds");
   }
 
   function totalPORTDue()
@@ -298,15 +300,15 @@ contract OffchainAggregatorBilling is Owned {
   {
     uint16[maxNumOracles] memory observationCounts = s_oracleObservationsCounts;
     for (uint i = 0; i < maxNumOracles; i++) {
-      portDue += observationCounts[i] - 1;
+      portDue += observationCounts[i];
     }
     Billing memory billing = s_billing;
-    portDue *= uint256(billing.portGweiPerObservation) * (1 gwei);
+    portDue = uint256(billing.portGweiPerObservation).mul(1 gwei).mul(portDue);
     address[] memory transmitters = s_transmitters;
     uint256[maxNumOracles] memory gasReimbursementsPortWei =
       s_gasReimbursementsPortWei;
     for (uint i = 0; i < transmitters.length; i++) {
-      portDue += uint256(gasReimbursementsPortWei[i]-1);
+      portDue = uint256(gasReimbursementsPortWei[i]).add(portDue);
     }
   }
 
@@ -327,7 +329,7 @@ contract OffchainAggregatorBilling is Owned {
   {
     Oracle memory oracle = s_oracles[_signerOrTransmitter];
     if (oracle.role == Role.Unset) { return 0; }
-    return s_oracleObservationsCounts[oracle.index] - 1;
+    return s_oracleObservationsCounts[oracle.index];
   }
 
 
@@ -346,7 +348,7 @@ contract OffchainAggregatorBilling is Owned {
       "sent by undesignated transmitter"
     );
     uint256 gasPrice = impliedGasPrice(
-      tx.gasprice / (1 gwei),
+      tx.gasprice.div(1 gwei),
       billing.reasonableGasPrice,
       billing.maximumGasPrice
     );
@@ -358,10 +360,11 @@ contract OffchainAggregatorBilling is Owned {
       callDataGasCost,
       gasLeft
     );
-    uint256 gasCostPortWei = (gasCostEthWei * billing.microPortPerEth)/ 1e6;    // 转换为port token
+    uint256 gasCostPortWei = gasCostEthWei.mul(billing.microPortPerEth).div(1e6);
     s_gasReimbursementsPortWei[txOracle.index] =
-      s_gasReimbursementsPortWei[txOracle.index] + gasCostPortWei +
-      uint256(billing.portGweiPerTransmission) * (1 gwei);
+      s_gasReimbursementsPortWei[txOracle.index]
+      .add(gasCostPortWei)
+      .add(uint256(billing.portGweiPerTransmission).mul(1 gwei));
   }
 
   event PayeeshipTransferRequested(
