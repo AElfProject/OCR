@@ -4,147 +4,141 @@ pragma solidity ^0.7.1;
 import "./OffchainAggregator.sol";
 import "./SimpleReadAccessController.sol";
 
-/**
- * @notice Wrapper of OffchainAggregator which checks read access on Aggregator-interface methods
- */
-contract AccessControlledOffchainAggregator is OffchainAggregator, SimpleReadAccessController {
+contract AccessControlledOffchainAggregator is
+    OffchainAggregator,
+    SimpleReadAccessController
+{
+    constructor(
+        uint32 _maximumGasPrice,
+        uint32 _reasonableGasPrice,
+        uint32 _microPortPerEth,
+        uint32 _portGweiPerObservation,
+        uint32 _portGweiPerTransmission,
+        address _port,
+        AccessControllerInterface _billingAccessController,
+        AccessControllerInterface _requesterAccessController,
+        uint8 _decimals,
+        string memory description
+    )
+        OffchainAggregator(
+            _maximumGasPrice,
+            _reasonableGasPrice,
+            _microPortPerEth,
+            _portGweiPerObservation,
+            _portGweiPerTransmission,
+            _port,
+            _billingAccessController,
+            _requesterAccessController,
+            _decimals,
+            description
+        )
+    {}
 
-  constructor(
-    uint32 _maximumGasPrice,
-    uint32 _reasonableGasPrice,
-    uint32 _microLinkPerEth,
-    uint32 _linkGweiPerObservation,
-    uint32 _linkGweiPerTransmission,
-    address _link,
-    AccessControllerInterface _billingAccessController,
-    AccessControllerInterface _requesterAccessController,
-    uint8 _decimals,
-    string memory description
-  )
-    OffchainAggregator(
-      _maximumGasPrice,
-      _reasonableGasPrice,
-      _microLinkPerEth,
-      _linkGweiPerObservation,
-      _linkGweiPerTransmission,
-      _link,
-      _billingAccessController,
-      _requesterAccessController,
-      _decimals,
-      description
-    ) {
+    function latestAnswer()
+        public
+        view
+        override
+        checkAccess()
+        returns (
+            bytes32[] memory,
+            uint8,
+            bytes32,
+            bytes32,
+            bytes32[] memory
+        )
+    {
+        return super.latestAnswer();
     }
 
-  /*
-   * v2 Aggregator interface
-   */
+    function latestTimestamp()
+        public
+        view
+        override
+        checkAccess()
+        returns (uint256)
+    {
+        return super.latestTimestamp();
+    }
 
-  /// @inheritdoc OffchainAggregator
-  function latestAnswer()
-    public
-    override
-    view
-    checkAccess()
-    returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory)
-  {
-    return super.latestAnswer();
-  }
+    function latestRound()
+        public
+        view
+        override
+        checkAccess()
+        returns (uint256)
+    {
+        return super.latestRound();
+    }
 
-  /// @inheritdoc OffchainAggregator
-  function latestTimestamp()
-    public
-    override
-    view
-    checkAccess()
-    returns (uint256)
-  {
-    return super.latestTimestamp();
-  }
+    function getAnswer(uint256 _roundId)
+        public
+        view
+        override
+        checkAccess()
+        returns (
+            bytes32[] memory,
+            uint8,
+            bytes32,
+            bytes32,
+            bytes32[] memory
+        )
+    {
+        return super.getAnswer(_roundId);
+    }
 
-  /// @inheritdoc OffchainAggregator
-  function latestRound()
-    public
-    override
-    view
-    checkAccess()
-    returns (uint256)
-  {
-    return super.latestRound();
-  }
+    function getTimestamp(uint256 _roundId)
+        public
+        view
+        override
+        checkAccess()
+        returns (uint256)
+    {
+        return super.getTimestamp(_roundId);
+    }
 
-  /// @inheritdoc OffchainAggregator
-  function getAnswer(uint256 _roundId)
-    public
-    override
-    view
-    checkAccess()
-    returns (bytes32, uint8, bytes32, bytes32, bytes32[] memory)
-  {
-    return super.getAnswer(_roundId);
-  }
+    function description()
+        public
+        view
+        override
+        checkAccess()
+        returns (string memory)
+    {
+        return super.description();
+    }
 
-  /// @inheritdoc OffchainAggregator
-  function getTimestamp(uint256 _roundId)
-    public
-    override
-    view
-    checkAccess()
-    returns (uint256)
-  {
-    return super.getTimestamp(_roundId);
-  }
+    function getRoundData(uint80 _roundId)
+        public
+        view
+        override
+        checkAccess()
+        returns (
+            uint80,
+            bytes32[] memory,
+            uint8,
+            bytes32,
+            bytes32,
+            bytes32[] memory,
+            uint256
+        )
+    {
+        return super.getRoundData(_roundId);
+    }
 
-  /*
-   * v3 Aggregator interface
-   */
-
-  /// @inheritdoc OffchainAggregator
-  function description()
-    public
-    override
-    view
-    checkAccess()
-    returns (string memory)
-  {
-    return super.description();
-  }
-
-  /// @inheritdoc OffchainAggregator
-  function getRoundData(uint80 _roundId)
-    public
-    override
-    view
-    checkAccess()
-    returns (
-      uint80,
-      bytes32,
-      uint8,
-      bytes32,
-      bytes32,
-      bytes32[] memory,
-      uint256
-    )
-  {
-    return super.getRoundData(_roundId);
-  }
-
-  /// @inheritdoc OffchainAggregator
-  function latestRoundData()
-    public
-    override
-    view
-    checkAccess()
-    returns (
-      uint80,
-      bytes32,
-      uint8,
-      bytes32,
-      bytes32,
-      bytes32[] memory,
-      uint256
-    )
-  {
-    return super.latestRoundData();
-  }
-
+    function latestRoundData()
+        public
+        view
+        override
+        checkAccess()
+        returns (
+            uint80,
+            bytes32[] memory,
+            uint8,
+            bytes32,
+            bytes32,
+            bytes32[] memory,
+            uint256
+        )
+    {
+        return super.latestRoundData();
+    }
 }

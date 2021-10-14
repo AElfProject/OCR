@@ -23,6 +23,7 @@ bld/
 [Ll]og/
 
 [Bb]uild/
+[Dd]eploy/
 
 # Visual Studio 2015 cache/options directory
 .vs/a
@@ -315,6 +316,7 @@ tools
 .idea/.idea.AElf/.idea/vcs.xml
 .idea/.idea.AElf/.idea/workspace.xml
 .idea/.idea.AElf/riderModule.iml
-
-./package-lock.json
 ./yarn.lock
+./package-lock.json
+./.secret
+./.env
